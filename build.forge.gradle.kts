@@ -127,6 +127,11 @@ val testMods = mapOf(
     "withAmendments" to listOf("local:amendments-1.20:2.2.6", "local:moonlight-1.20:2.16.37-forge"),
     "withEasyMods" to listOf("local:EasyMagic:v8.0.1-1.20.1-Forge", "local:EasyAnvils:v8.0.2-1.20.1-Forge", "local:PuzzlesLib:v8.1.36-1.20.1-Forge"),
     "withPolymorph" to listOf("local:polymorph-forge:0.49.11+1.20.1"),
+    // Quark 4.0-462 with Zeta 1.0-31: its wood crafting tables. With Every Compat 2.9.28 and Moonlight 2.16.37 too, and
+    // Ecologics 2.2.7 for woods of another mod: Every Compat makes Quark's tables of those.
+    "withQuark" to listOf("maven.modrinth:quark:DijQLauD", "maven.modrinth:zeta:mSER3jBI"),
+    "withEveryCompat" to listOf("maven.modrinth:quark:DijQLauD", "maven.modrinth:zeta:mSER3jBI", "maven.modrinth:every-compat:gbhQFyid",
+        "maven.modrinth:moonlight:b1cuadwV", "maven.modrinth:ecologics:jB0V9NeZ"),
     "withProfile" to listOf("local:entity_model_features:3.2.4-1.20.1-forge", "local:entity_texture_features_1.20.1-forge:7.1",
         "local:entityculling-forge:1.10.5-mc1.20.1", "local:ferritecore:6.0.1-forge", "local:xaeroworldmap-forge-1.20.1:1.45.0"),
 )
