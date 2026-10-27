@@ -529,5 +529,7 @@
   "cinematic.settings.profiles.hidden": "Turn on developer mode to choose layout profiles.",
   "cinematic.configuration.reduceMotion": "Reduce motion",
   "cinematic.configuration.reduceMotion.tooltip": "Turns off the letterbox bars, the breathing camera, the shake and the flashes at once, whatever each is set to. For players who get motion sick.",
-  "cinematic.recipes.material": "You have %1$s of %2$s"
+  "cinematic.recipes.material": "You have %1$s of %2$s",
+  "cinematic.settings.addon.tooltip": "Its scene, added by %s. Off, the block keeps its usual window.",
+  "cinematic.configuration.disabledAddons": "Add-on stations turned off"
 }

@@ -527,5 +527,7 @@
   "cinematic.choices.title": "What it makes · Polymorph",
   "cinematic.choices.in_use": "Chosen: this is what will be made",
   "cinematic.choices.pick": "Click to choose this result",
-  "cinematic.recipes.material": "You have %1$s of %2$s"
+  "cinematic.recipes.material": "You have %1$s of %2$s",
+  "cinematic.settings.addon.tooltip": "Its scene, added by %s. Off, the block keeps its usual window.",
+  "cinematic.configuration.disabledAddons": "Add-on stations turned off"
 }

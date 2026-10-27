@@ -529,5 +529,7 @@
   "cinematic.choices.title": "Qué se fabrica · Polymorph",
   "cinematic.choices.in_use": "Elegido: esto es lo que se fabricará",
   "cinematic.choices.pick": "Haz clic para elegir este resultado",
-  "cinematic.recipes.material": "Tienes %1$s de %2$s"
+  "cinematic.recipes.material": "Tienes %1$s de %2$s",
+  "cinematic.settings.addon.tooltip": "Su escena, añadida por %s. Desactivada, el bloque conserva su ventana de siempre.",
+  "cinematic.configuration.disabledAddons": "Estaciones de addons desactivadas"
 }

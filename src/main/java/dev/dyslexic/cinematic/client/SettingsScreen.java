@@ -1,12 +1,15 @@
 package dev.dyslexic.cinematic.client;
 
+import dev.dyslexic.cinematic.api.AddonStations;
 import dev.dyslexic.cinematic.station.StationKind;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.BooleanSupplier;
 //? if forge {
 /*import java.util.function.IntSupplier;
@@ -35,8 +38,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
-import net.minecraft.world.level.ItemLike;
 //? if neoforge {
 import net.neoforged.neoforge.common.ModConfigSpec;
 //?} else if forge {
@@ -53,17 +54,11 @@ public final class SettingsScreen extends Screen {
 
     private enum Tab { GENERAL, STATIONS, CAMERA, ADVANCED }
 
-    /** The stations as they are grouped on their tab, with the item that stands for each. */
-    private static final Object[][] GROUPS = {
-            //? if >=1.21 {
-            {"crafting", StationKind.TABLE, StationKind.CRAFTER, StationKind.STONECUTTER, StationKind.LOOM, StationKind.CARTOGRAPHY},
-            //?} else if <1.21 {
-            /*{"crafting", StationKind.TABLE, StationKind.STONECUTTER, StationKind.LOOM, StationKind.CARTOGRAPHY},
-            *///?}
-            {"cooking", StationKind.FURNACE, StationKind.SMOKER, StationKind.BLAST_FURNACE, StationKind.CAMPFIRE},
-            {"smithing", StationKind.ANVIL, StationKind.GRINDSTONE, StationKind.SMITHING},
-            {"magic", StationKind.ENCHANTING, StationKind.BREWING, StationKind.BEACON},
-            {"other", StationKind.LECTERN, StationKind.JUKEBOX, StationKind.CHISELED_BOOKSHELF}};
+    /**
+     * The order of the groups on the Stations tab; each station names its own group ({@link StationKind#group}), and a
+     * group not listed here comes after these.
+     */
+    private static final List<String> GROUP_ORDER = List.of("crafting", "cooking", "smithing", "magic", "other");
 
     /** Pace, view and effects set at once; any other mix reads as custom. */
     private enum Preset {
@@ -446,14 +441,25 @@ public final class SettingsScreen extends Screen {
         *///?} else if forge {
         /*all.add(choice(Tab.GENERAL, "armStyle", Settings.ARM_STYLE, 3, () -> number(Settings.ARM_STYLE), 0));
         *///?}
-        // stations
-        for (Object[] group : GROUPS) {
-            all.add(new Header(Tab.STATIONS, Component.translatable("cinematic.settings.group." + group[0])));
-            for (int i = 1; i < group.length; i++) {
-                StationKind kind = (StationKind) group[i];
-                all.add(new StationOption(kind));
-            }
+        // stations: each in its own group, then those of add-ons under the mod that adds them
+        Map<String, List<StationKind>> groups = new LinkedHashMap<>();
+        for (String group : GROUP_ORDER) groups.put(group, new ArrayList<>());
+        for (StationKind kind : StationKind.values()) {
+            if (kind != StationKind.ADDON) groups.computeIfAbsent(kind.group, group -> new ArrayList<>()).add(kind);
         }
+        groups.forEach((group, kinds) -> {
+            if (kinds.isEmpty()) return;
+            all.add(new Header(Tab.STATIONS, Component.translatable("cinematic.settings.group." + group)));
+            for (StationKind kind : kinds) all.add(new StationOption(kind));
+        });
+        Map<String, List<AddonStations.Definition>> addons = new LinkedHashMap<>();
+        for (AddonStations.Definition addon : AddonStations.all()) {
+            addons.computeIfAbsent(addon.blockId().getNamespace(), mod -> new ArrayList<>()).add(addon);
+        }
+        addons.forEach((mod, definitions) -> {
+            all.add(new Header(Tab.STATIONS, Component.literal(modName(mod))));
+            for (AddonStations.Definition addon : definitions) all.add(new AddonOption(addon, modName(mod)));
+        });
         // camera
         all.add(presetOption());
         all.add(toggle(Tab.CAMERA, "reduceMotion", Settings.REDUCE_MOTION, onOff));
@@ -552,6 +558,49 @@ public final class SettingsScreen extends Screen {
         void reset() {
             put(Settings.SCENES.get(kind), true);
         }
+    }
+
+    /**
+     * An add-on's station, listed from the add-ons' registry: on or off, kept in the list of those turned off (add-ons
+     * register theirs after the settings file is built, so they cannot have a setting each).
+     */
+    private final class AddonOption extends Option {
+        final AddonStations.Definition addon;
+
+        AddonOption(AddonStations.Definition addon, String mod) {
+            super(Tab.STATIONS, block(addon).getName(), Component.translatable("cinematic.settings.addon.tooltip", mod));
+            this.addon = addon;
+        }
+
+        boolean on() {
+            return !disabledAddons().contains(addon.id().toString());
+        }
+
+        void set(boolean on) {
+            Set<String> ids = new java.util.LinkedHashSet<>(disabledAddons());
+            if (on) ids.remove(addon.id().toString());
+            else ids.add(addon.id().toString());
+            putDisabledAddons(ids);
+        }
+
+        @Override
+        AbstractWidget control() {
+            return new AddonButton(this);
+        }
+
+        @Override
+        boolean changed() {
+            return !on();
+        }
+
+        @Override
+        void reset() {
+            set(true);
+        }
+    }
+
+    private static net.minecraft.world.level.block.Block block(AddonStations.Definition addon) {
+        return net.minecraft.core.registries.BuiltInRegistries.BLOCK.get(addon.blockId());
     }
 
     /** A title over the options after it (shown only with developer mode on, for the profiles). */
@@ -680,16 +729,32 @@ public final class SettingsScreen extends Screen {
 
     private void stations(boolean on) {
         for (StationKind kind : Settings.SCENES.keySet()) {
-            //? if !forge {
             put(Settings.SCENES.get(kind), on);
-            //?} else if forge {
-            /*// (an addon's station is not on the tab: its setting stays as it is)
-            if (kind != StationKind.ADDON) {
-                put(Settings.SCENES.get(kind), on);
-            }
-            *///?}
         }
+        Set<String> off = new java.util.LinkedHashSet<>();
+        if (!on) for (AddonStations.Definition addon : AddonStations.all()) off.add(addon.id().toString());
+        putDisabledAddons(off);
         dirty = true;
+    }
+
+    /** The add-on stations turned off in the draft. */
+    private Set<String> disabledAddons() {
+        return Settings.parseIds((String) draft.getOrDefault(Settings.DISABLED_ADDONS, Settings.DISABLED_ADDONS.get()));
+    }
+
+    private void putDisabledAddons(Set<String> ids) {
+        put(Settings.DISABLED_ADDONS, String.join(",", ids));
+    }
+
+    /** The name a mod shows in the mod list, or its id. */
+    private static String modName(String mod) {
+        //? if neoforge {
+        return net.neoforged.fml.ModList.get().getModContainerById(mod).map(c -> c.getModInfo().getDisplayName()).orElse(mod);
+        //?} else if fabric {
+        /*return net.fabricmc.loader.api.FabricLoader.getInstance().getModContainer(mod).map(c -> c.getMetadata().getName()).orElse(mod);
+        *///?} else if forge {
+        /*return net.minecraftforge.fml.ModList.get().getModContainerById(mod).map(c -> c.getModInfo().getDisplayName()).orElse(mod);
+        *///?}
     }
 
     private static Component tabTitle(Tab t) {
@@ -750,32 +815,6 @@ public final class SettingsScreen extends Screen {
         return Component.literal(v + "%");
     }
 
-    private static ItemLike icon(StationKind kind) {
-        return switch (kind) {
-            case TABLE -> Items.CRAFTING_TABLE;
-            case FURNACE -> Items.FURNACE;
-            case SMOKER -> Items.SMOKER;
-            case BLAST_FURNACE -> Items.BLAST_FURNACE;
-            case ENCHANTING -> Items.ENCHANTING_TABLE;
-            case ANVIL -> Items.ANVIL;
-            case GRINDSTONE -> Items.GRINDSTONE;
-            case SMITHING -> Items.SMITHING_TABLE;
-            case STONECUTTER -> Items.STONECUTTER;
-            case LOOM -> Items.LOOM;
-            case CARTOGRAPHY -> Items.CARTOGRAPHY_TABLE;
-            case BREWING -> Items.BREWING_STAND;
-            //? if >=1.21 {
-            case CRAFTER -> Items.CRAFTER;
-            //?}
-            case CAMPFIRE -> Items.CAMPFIRE;
-            case LECTERN -> Items.LECTERN;
-            case BEACON -> Items.BEACON;
-            case JUKEBOX -> Items.JUKEBOX;
-            case CHISELED_BOOKSHELF -> Items.CHISELED_BOOKSHELF;
-            case ADDON -> Items.BARRIER;
-        };
-    }
-
     // ---- widgets -----------------------------------------------------------------------------------
 
     /** A station's block, its name and On or Off; a click switches its scene. */
@@ -795,13 +834,36 @@ public final class SettingsScreen extends Screen {
                 put(value, !bool(value));
             }, narration -> narration.get());
             this.option = option;
-            this.stack = new ItemStack(icon(option.kind));
+            this.stack = new ItemStack(option.kind.icon);
         }
 
         @Override
         public Component getMessage() {
             boolean on = bool(Settings.SCENES.get(option.kind));
             return Component.empty().append(option.label).append(" · ").append(value(on, "cinematic.settings.on", "cinematic.settings.off"));
+        }
+
+        @Override
+        public void renderString(GuiGraphics graphics, Font font, int color) {
+            graphics.renderItem(stack, getX() + 3, getY() + 2);
+            renderScrollingString(graphics, font, getMessage(), getX() + 22, getY(), getX() + getWidth() - 3, getY() + getHeight(), color);
+        }
+    }
+
+    /** An add-on station's button: its block's item, its name, and on or off. */
+    private final class AddonButton extends Button {
+        final AddonOption option;
+        private final ItemStack stack;
+
+        AddonButton(AddonOption option) {
+            super(0, 0, 150, 20, Component.empty(), button -> option.set(!option.on()), narration -> narration.get());
+            this.option = option;
+            this.stack = new ItemStack(block(option.addon));
+        }
+
+        @Override
+        public Component getMessage() {
+            return Component.empty().append(option.label).append(" · ").append(value(option.on(), "cinematic.settings.on", "cinematic.settings.off"));
         }
 
         @Override

@@ -529,5 +529,7 @@
   "cinematic.settings.profiles.hidden": "Включи режим разработчика, чтобы выбирать профили раскладки.",
   "cinematic.configuration.reduceMotion": "Меньше движения",
   "cinematic.configuration.reduceMotion.tooltip": "Разом выключает чёрные полосы, дыхание камеры, тряску и вспышки, как бы они ни были настроены. Для тех, кого укачивает.",
-  "cinematic.recipes.material": "Есть %1$s из %2$s"
+  "cinematic.recipes.material": "Есть %1$s из %2$s",
+  "cinematic.settings.addon.tooltip": "Сцена от мода %s. Если выключена, блок открывает своё обычное окно.",
+  "cinematic.configuration.disabledAddons": "Отключённые станции аддонов"
 }

@@ -44,6 +44,7 @@ public final class ClientConfig {
         JsonObject root = new JsonObject();
         values.forEach((key, value) -> {
             if (value.get() instanceof Boolean b) root.addProperty(key, b);
+            else if (value.get() instanceof String s) root.addProperty(key, s);
             else root.addProperty(key, (Number) value.get());
         });
         try {
@@ -71,6 +72,10 @@ public final class ClientConfig {
         @Override public void set(Integer value) { super.set(Math.max(min, Math.min(max, value))); }
         @Override void read(JsonObject json, String key) { set(json.get(key).getAsInt()); }
     }
+    public static final class StringValue extends Value<String> {
+        StringValue(String fallback) { super(fallback); }
+        @Override void read(JsonObject json, String key) { value = json.get(key).getAsString(); }
+    }
     public static final class Builder {
         private final ArrayDeque<String> sections = new ArrayDeque<>();
         private final Map<String, Value<?>> values = new LinkedHashMap<>();
@@ -81,6 +86,9 @@ public final class ClientConfig {
         private String key(String name) { return String.join(".", sections) + "." + name; }
         public BooleanValue define(String name, boolean fallback) {
             var value = new BooleanValue(fallback); values.put(key(name), value); return value;
+        }
+        public StringValue define(String name, String fallback) {
+            var value = new StringValue(fallback); values.put(key(name), value); return value;
         }
         public IntValue defineInRange(String name, int fallback, int min, int max) {
             var value = new IntValue(fallback, min, max); values.put(key(name), value); return value;

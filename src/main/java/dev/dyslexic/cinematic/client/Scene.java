@@ -235,7 +235,7 @@ public final class Scene {
         }
         BlockState currentState = mc.level.getBlockState(pos);
         var addonDefinition = kind == StationKind.ADDON ? dev.dyslexic.cinematic.api.AddonStations.forBlock(currentState) : null;
-        if (!Settings.scene(kind) || OWN_WINDOW.contains(kind)
+        if (!Settings.scene(kind, currentState) || OWN_WINDOW.contains(kind)
                 || addonDefinition != null && OWN_ADDON_WINDOWS.contains(addonDefinition.id())) {
             // the player turned this block's scene off, or a mod gave the block a menu of its own: it keeps its usual
             // window (a campfire has none)
@@ -420,7 +420,7 @@ public final class Scene {
         }
         BlockState state = mc.level.getBlockState(hit.getBlockPos());
         StationKind kind = StationKind.of(state);
-        if (kind == null || !kind.startsOnUse() || !Settings.scene(kind) || !kind.usable(mc.level, hit.getBlockPos(), state)
+        if (kind == null || !kind.startsOnUse() || !Settings.scene(kind, state) || !kind.usable(mc.level, hit.getBlockPos(), state)
                 || kind == StationKind.ADDON && !AddonScenes.available(state)) {
             return;
         }

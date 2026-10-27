@@ -1,6 +1,6 @@
 package dev.dyslexic.cinematic.api;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -61,8 +61,8 @@ public final class AddonStations {
         }
     }
 
-    private static final Map<ResourceLocation, Definition> BY_ID = new HashMap<>();
-    private static final Map<ResourceLocation, Definition> BY_BLOCK = new HashMap<>();
+    private static final Map<ResourceLocation, Definition> BY_ID = new LinkedHashMap<>();
+    private static final Map<ResourceLocation, Definition> BY_BLOCK = new LinkedHashMap<>();
 
     /** A block may belong to only one add-on station. Call during mod setup, before joining a world. */
     public static synchronized void register(Definition definition) {
@@ -83,5 +83,10 @@ public final class AddonStations {
     @Nullable
     public static synchronized Definition forBlock(BlockState state) {
         return BY_BLOCK.get(BuiltInRegistries.BLOCK.getKey(state.getBlock()));
+    }
+
+    /** Every registered station, in the order they were registered. */
+    public static synchronized List<Definition> all() {
+        return List.copyOf(BY_ID.values());
     }
 }
