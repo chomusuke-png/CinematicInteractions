@@ -1,6 +1,7 @@
 package dev.dyslexic.cinematic.station;
 
 import dev.dyslexic.cinematic.api.AddonStations;
+import dev.dyslexic.cinematic.table.TableGrid;
 import java.util.List;
 import javax.annotation.Nullable;
 import net.minecraft.core.BlockPos;
@@ -84,7 +85,7 @@ public enum StationKind {
 
     @Nullable
     public static StationKind of(BlockState state) {
-        if (state.is(Blocks.CRAFTING_TABLE)) {
+        if (TableGrid.isTable(state)) {
             return TABLE;
         }
         if (state.is(Blocks.FURNACE)) {

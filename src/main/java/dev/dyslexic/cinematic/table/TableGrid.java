@@ -4,8 +4,14 @@ import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.CartographyTableBlock;
+import net.minecraft.world.level.block.CraftingTableBlock;
+import net.minecraft.world.level.block.SmithingTableBlock;
 import net.minecraft.world.level.block.state.BlockState;
 
 /**
@@ -26,8 +32,25 @@ public final class TableGrid {
     public static final double GRID_MIN = 3.5 / 16.0;
     public static final double GRID_MAX = GRID_MIN + 3 * CELL;
 
+    //? if >=1.21 {
+    /** The common tag mods put their crafting tables in (NeoForge and Fabric; 1.20.1 has none both share). */
+    private static final TagKey<Block> CRAFTING_TABLES = TagKey.create(Registries.BLOCK,
+            net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("c", "player_workstations/crafting_tables"));
+    //?}
+
+    /**
+     * A crafting table: the vanilla one, one a mod puts in the common crafting-table tag, or a mod's own kind of it
+     * (Quark's and Every Compat's wood tables are crafting tables of their own class). Vanilla's smithing and cartography
+     * tables are crafting tables by class too (and the fletching table in older versions), and are not.
+     */
     public static boolean isTable(BlockState state) {
-        return state.is(Blocks.CRAFTING_TABLE);
+        if (state.is(Blocks.CRAFTING_TABLE)) return true;
+        //? if >=1.21 {
+        if (state.is(CRAFTING_TABLES)) return true;
+        //?}
+        Block block = state.getBlock();
+        return block instanceof CraftingTableBlock && !(block instanceof SmithingTableBlock || block instanceof CartographyTableBlock
+                || state.is(Blocks.FLETCHING_TABLE));
     }
 
     /** Cell centre inside the block, 0..1. */
