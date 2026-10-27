@@ -47,8 +47,21 @@ public final class MenuActions {
 
     /** Opens the block's menu for the player; the client keeps it but shows the scene instead of the window. */
     public static boolean open(ServerPlayer player, Session session) {
-        MenuProvider provider = provider(player, session.pos(), session.kind());
-        return provider != null && player.openMenu(provider).isPresent() && isOpen(session, player.containerMenu);
+        return openMenu(player, session.pos(), session.kind()) && isOpen(session, player.containerMenu);
+    }
+
+    /** Opens the block's menu as using the block would: an add-on's own opener, or else the block's menu provider. */
+    public static boolean openMenu(ServerPlayer player, BlockPos pos, StationKind kind) {
+        if (kind == StationKind.ADDON) {
+            var state = player.level().getBlockState(pos);
+            AddonStations.Definition definition = AddonStations.forBlock(state);
+            if (definition != null && definition.opener() != null) {
+                definition.opener().open(player, pos, state);
+                return true;
+            }
+        }
+        MenuProvider provider = provider(player, pos, kind);
+        return provider != null && player.openMenu(provider).isPresent();
     }
 
     /** What opens the block's menu, as using the block would (null when it has none, or will not open now). */

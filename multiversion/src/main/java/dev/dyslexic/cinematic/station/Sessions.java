@@ -20,7 +20,6 @@ import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.MenuProvider;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
@@ -164,10 +163,7 @@ public final class Sessions {
             ShelfActions.vanillaUse(player, pos, slot);
             return;
         }
-        MenuProvider provider = MenuActions.provider(player, pos, kind);
-        if (provider != null) {
-            player.openMenu(provider);
-        }
+        MenuActions.openMenu(player, pos, kind);
     }
 
     /** Ends a session; the item still in hand goes back to the inventory. */

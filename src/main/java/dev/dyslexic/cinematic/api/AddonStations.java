@@ -6,9 +6,11 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 import javax.annotation.Nullable;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.level.block.state.BlockState;
 
@@ -19,14 +21,31 @@ import net.minecraft.world.level.block.state.BlockState;
 public final class AddonStations {
     private AddonStations() {}
 
+    /**
+     * Opens the block's menu for a player, on the server, as using the block would. Only needed when the menu takes
+     * more than the vanilla {@code openMenu} sends (extra data for its client copy, a menu kept by another block of
+     * a multi-block); without one, the block's {@code MenuProvider} is opened.
+     */
+    @FunctionalInterface
+    public interface MenuOpener {
+        void open(ServerPlayer player, BlockPos pos, BlockState state);
+    }
+
+    /** {@code opener} may be null: the block's own {@code MenuProvider} is opened then. */
     public record Definition(ResourceLocation id, ResourceLocation blockId,
                              Class<? extends AbstractContainerMenu> menuClass,
-                             Function<BlockState, List<Direction>> sides) {
+                             Function<BlockState, List<Direction>> sides,
+                             @Nullable MenuOpener opener) {
         public Definition {
             Objects.requireNonNull(id, "id");
             Objects.requireNonNull(blockId, "blockId");
             Objects.requireNonNull(menuClass, "menuClass");
             Objects.requireNonNull(sides, "sides");
+        }
+
+        public Definition(ResourceLocation id, ResourceLocation blockId, Class<? extends AbstractContainerMenu> menuClass,
+                          Function<BlockState, List<Direction>> sides) {
+            this(id, blockId, menuClass, sides, null);
         }
 
         public boolean accepts(AbstractContainerMenu menu) {
