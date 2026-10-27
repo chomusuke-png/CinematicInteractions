@@ -1,9 +1,13 @@
 package dev.dyslexic.cinematic.client;
 
+import dev.dyslexic.cinematic.api.AddonStations;
 import dev.dyslexic.cinematic.station.StationKind;
 import java.util.EnumMap;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import java.util.Locale;
 import java.util.Map;
+import net.minecraft.world.level.block.state.BlockState;
 import dev.dyslexic.cinematic.client.ClientConfig;
 
 /**
@@ -17,6 +21,8 @@ public final class Settings {
 
     static final ClientConfig.BooleanValue HEIGHT_LOGIC;
     static final Map<StationKind, ClientConfig.BooleanValue> SCENES = new EnumMap<>(StationKind.class);
+    /** The add-on stations turned off, by id, comma-separated: add-ons register theirs after this file is built. */
+    static final ClientConfig.StringValue DISABLED_ADDONS;
     static final ClientConfig.BooleanValue CONTROL_HINTS;
     static final ClientConfig.BooleanValue CAMPFIRE_INVITE;
     static final ClientConfig.IntValue APPROACH_SPEED;
@@ -49,6 +55,8 @@ public final class Settings {
             SCENES.put(kind, b.comment("Whether " + key + " plays its scene (false: the block keeps its usual window).")
                     .translation("cinematic.configuration." + key).define(key, true));
         }
+        DISABLED_ADDONS = b.comment("The add-on stations that keep their usual window: their ids, separated by commas.")
+                .translation("cinematic.configuration.disabledAddons").define("disabledAddons", "");
         b.pop();
         b.pop();
         b.translation("cinematic.configuration.interface").push("interface");
@@ -142,6 +150,24 @@ public final class Settings {
     public static boolean scene(StationKind kind) {
         if (kind == StationKind.ADDON) return true;
         return get(SCENES.get(kind));
+    }
+
+    /** Whether the block plays its scene: an add-on's block unless the player turned that add-on station off. */
+    public static boolean scene(StationKind kind, BlockState state) {
+        if (kind != StationKind.ADDON) return scene(kind);
+        AddonStations.Definition definition = AddonStations.forBlock(state);
+        return definition == null || !disabledAddons().contains(definition.id().toString());
+    }
+
+    /** The ids of the add-on stations the player turned off. */
+    public static Set<String> disabledAddons() {
+        return parseIds(SPEC.isLoaded() ? DISABLED_ADDONS.get() : "");
+    }
+
+    static Set<String> parseIds(String ids) {
+        Set<String> set = new LinkedHashSet<>();
+        for (String id : ids.split(",")) if (!id.isBlank()) set.add(id.strip());
+        return set;
     }
 
     public static boolean controlHints() {

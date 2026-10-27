@@ -8,6 +8,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.ItemLike;
 import net.minecraft.world.level.block.AbstractFurnaceBlock;
 import net.minecraft.world.level.block.AnvilBlock;
 import net.minecraft.world.level.block.Blocks;
@@ -23,46 +24,58 @@ import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 /** The blocks the player can step up to. Each one is a scene of its own. */
 public enum StationKind {
     /** Items are laid out on the 3x3 top and crafted there. */
-    TABLE,
+    TABLE("crafting", Blocks.CRAFTING_TABLE),
     /** Fuel goes into the lower opening of the front, things to smelt into the upper one. */
-    FURNACE,
+    FURNACE("cooking", Blocks.FURNACE),
     /** Food into the window, fuel behind the grate below it. */
-    SMOKER,
+    SMOKER("cooking", Blocks.SMOKER),
     /** Ore is charged from the top, fuel goes behind the front grate, ingots come out on the sill. */
-    BLAST_FURNACE,
+    BLAST_FURNACE("cooking", Blocks.BLAST_FURNACE),
     /** The item floats over the table, lapis rests in a corner socket, offers hang in the air as runes. */
-    ENCHANTING,
+    ENCHANTING("magic", Blocks.ENCHANTING_TABLE),
     /** The item lies on the anvil, what goes into it lies on top; a hammer forges them into one. */
-    ANVIL,
+    ANVIL("smithing", Blocks.ANVIL),
     /** The item rests on the wheel; ground against it, its enchantments flake away in sparks. */
-    GRINDSTONE,
+    GRINDSTONE("smithing", Blocks.GRINDSTONE),
     /** Template, gear and material laid on the plate; the template is pressed on, the material melts in. */
-    SMITHING,
+    SMITHING("smithing", Blocks.SMITHING_TABLE),
     /** Stone is laid by the saw; the shapes it can be cut into hang round the blade like a dial. */
-    STONECUTTER,
+    STONECUTTER("crafting", Blocks.STONECUTTER),
     /** The banner is stretched over the warp; the patterns hang beside the loom on a glass board; a shuttle weaves. */
-    LOOM,
+    LOOM("crafting", Blocks.LOOM),
     /** The map lies on the table, what changes it beside; paper, glass or an empty map are worked into it. */
-    CARTOGRAPHY,
+    CARTOGRAPHY("crafting", Blocks.CARTOGRAPHY_TABLE),
     /** Bottles stand on the stand's feet, the ingredient sits in the bowl on top, blaze powder by the foot. */
-    BREWING,
+    BREWING("magic", Blocks.BREWING_STAND),
     /** Items are laid into the window of the crafter's grid; it crafts on a redstone signal, as in vanilla. */
-    CRAFTER,
+    CRAFTER("crafting", Blocks.CRAFTER),
     /** Not opened by using it: a key sits the player down by the fire, where food is put on and taken off. */
-    CAMPFIRE,
+    CAMPFIRE("cooking", Blocks.CAMPFIRE),
     /** The book lying open on it is read page by page; a leaf is turned by its corner. Only with a book on it. */
-    LECTERN,
+    LECTERN("other", Blocks.LECTERN),
     /** The powers hang in a crown over the beacon; payment floats on top; lit, the light bursts out over the pyramid. */
-    BEACON,
+    BEACON("magic", Blocks.BEACON),
     /** A short scene: a record is lowered on its edge into the slot on top, or the one playing rises out and is taken. */
-    JUKEBOX,
+    JUKEBOX("other", Blocks.JUKEBOX),
     /**
      * Crouched at its front: books are drawn out by the spine and slid back in, and a book with writing in it is opened
      * and read right there. Only its front is used, as in vanilla.
      */
-    CHISELED_BOOKSHELF,
+    CHISELED_BOOKSHELF("other", Blocks.CHISELED_BOOKSHELF),
     /** A registered menu-backed block provided by another mod. */
-    ADDON;
+    ADDON("addons", Blocks.BARRIER);
+
+    /**
+     * The group the block is listed under on the settings' Stations tab ({@code cinematic.settings.group.<group>}), and
+     * the block whose item stands for it there: a new station needs nothing more to appear on that tab.
+     */
+    public final String group;
+    public final ItemLike icon;
+
+    StationKind(String group, ItemLike icon) {
+        this.group = group;
+        this.icon = icon;
+    }
 
     private static final List<Direction> ANY_SIDE = List.of(Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST);
 
