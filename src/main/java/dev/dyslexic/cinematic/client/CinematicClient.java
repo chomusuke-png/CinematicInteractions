@@ -611,6 +611,11 @@ public final class CinematicClient {
 
         @SubscribeEvent(priority = EventPriority.LOWEST)
         public static void onScreenOpening(ScreenEvent.Opening event) {
+            screenOpening(event);
+            if (event.isCanceled()) HiddenWindows.keptShut(event.getNewScreen());
+        }
+
+        private static void screenOpening(ScreenEvent.Opening event) {
             Screen next = event.getNewScreen();
             if (!Scene.active() && ClientOnly.onScreenOpening(next)) {
                 event.setCanceled(true);
@@ -669,6 +674,11 @@ public final class CinematicClient {
 
         /*@SubscribeEvent(priority = EventPriority.LOWEST)
         public static void onScreenOpening(ScreenEvent.Opening event) {
+            screenOpening(event);
+            if (event.isCanceled()) HiddenWindows.keptShut(event.getNewScreen());
+        }
+
+        private static void screenOpening(ScreenEvent.Opening event) {
             Screen next = event.getNewScreen();
             if (!Scene.active() && ClientOnly.onScreenOpening(next)) {
                 event.setCanceled(true);

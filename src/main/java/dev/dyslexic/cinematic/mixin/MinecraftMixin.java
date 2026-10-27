@@ -31,7 +31,10 @@ public abstract class MinecraftMixin {
     /^* ScreenEvent.Opening, which NeoForge fires for a screen opening (not for closing one). ^/
     @Inject(method = "setScreen", at = @At("HEAD"), cancellable = true)
     private void cinematic$screen(Screen next, CallbackInfo ci) {
-        if (next != null && CinematicClient.onScreenOpening(next)) ci.cancel();
+        if (next != null && CinematicClient.onScreenOpening(next)) {
+            dev.dyslexic.cinematic.client.HiddenWindows.keptShut(next);
+            ci.cancel();
+        }
     }
 
     /^* LevelEvent.Unload: another level (a dimension, a respawn) replaces this one ... ^/
@@ -112,7 +115,10 @@ public abstract class MinecraftMixin {
     /^* ScreenEvent.Opening, which NeoForge fires for a screen opening (not for closing one). ^/
     @Inject(method = "setScreen", at = @At("HEAD"), cancellable = true)
     private void cinematic$screen(Screen next, CallbackInfo ci) {
-        if (next != null && CinematicClient.onScreenOpening(next)) ci.cancel();
+        if (next != null && CinematicClient.onScreenOpening(next)) {
+            dev.dyslexic.cinematic.client.HiddenWindows.keptShut(next);
+            ci.cancel();
+        }
     }
 
     /^* LevelEvent.Unload: another level (a dimension, a respawn) replaces this one ... ^/

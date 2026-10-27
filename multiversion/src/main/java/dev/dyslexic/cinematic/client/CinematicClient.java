@@ -92,6 +92,16 @@ public final class CinematicClient implements ClientModInitializer {
     }
 
     public static boolean screenOpening(Screen next) {
+        if (!hides(next)) return false;
+        // The window never opens, so it must not hear about its menu either: a mod's screen that listens from its
+        // constructor (Scribble's lectern) would otherwise read pages it only builds when it opens.
+        if (next instanceof MenuAccess<?> window && next instanceof net.minecraft.world.inventory.ContainerListener listener) {
+            window.getMenu().removeSlotListener(listener);
+        }
+        return true;
+    }
+
+    private static boolean hides(Screen next) {
         if (!Scene.active() && ClientOnly.onScreenOpening(next)) return true;
         if (!Scene.active() || next instanceof SceneScreen) return false;
         var player = Minecraft.getInstance().player;
