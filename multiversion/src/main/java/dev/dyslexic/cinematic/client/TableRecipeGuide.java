@@ -1,5 +1,6 @@
 package dev.dyslexic.cinematic.client;
 
+import dev.dyslexic.cinematic.api.client.RecipePanel;
 import dev.dyslexic.cinematic.table.TableGrid;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -7,7 +8,9 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import javax.annotation.Nullable;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.CraftingRecipe;
 import net.minecraft.world.item.crafting.Ingredient;
@@ -21,8 +24,8 @@ import net.minecraft.world.item.crafting.display.SlotDisplay;
 import net.minecraft.world.item.crafting.display.SlotDisplayContext;
 
 /** Local recipe reference: never places items or asks the server to unlock/craft a recipe. */
-final class TableRecipeGuide {
-    static final class Entry {
+final class TableRecipeGuide implements RecipePanel.Source {
+    static final class Entry implements RecipePanel.Entry {
         @Nullable final RecipeHolder<CraftingRecipe> holder;
         final ItemStack result;
         final List<Ingredient> ingredients;
@@ -65,6 +68,19 @@ final class TableRecipeGuide {
             idText = "#" + vanilla.id().index();
             search = (result.getHoverName().getString() + " " + idText).toLowerCase(Locale.ROOT);
         }
+
+        @Override public ItemStack result() { return result; }
+        @Override public String search() { return search; }
+        @Override public boolean craftable() { return craftable; }
+
+        @Override
+        public List<Component> details() {
+            List<Component> lines = new ArrayList<>();
+            lines.add(text("preview").copy().withStyle(ChatFormatting.GRAY));
+            // Recipe ids distinguish alternate recipes for the same result in large modpacks.
+            if (holder != null && Minecraft.getInstance().hasShiftDown()) lines.add(Component.literal(idText).withStyle(ChatFormatting.DARK_GRAY));
+            return lines;
+        }
     }
 
     @Nullable private static Ingredient ingredient(SlotDisplay slot, net.minecraft.util.context.ContextMap context) {
@@ -80,6 +96,8 @@ final class TableRecipeGuide {
     final boolean[] missing = new boolean[9];
     int missingCount;
     int revision;
+    /** When the shown recipe was chosen: its diagram fades in on the tabletop from then. */
+    double selectedAt;
     private final TableStation station;
     private List<ItemStack> snapshot = List.of();
     private int indexed = -1;
@@ -154,8 +172,95 @@ final class TableRecipeGuide {
         revision++;
     }
 
-    void select(@Nullable Entry entry) {
-        selected = entry;
+    @Override public List<Entry> entries() { return entries; }
+    @Override public int revision() { return revision; }
+    @Override @Nullable public Entry selected() { return selected; }
+
+    @Override
+    public void tick(boolean open) {
+        tick();
+    }
+
+    private static Component text(String key, Object... args) {
+        return Component.translatable("cinematic.recipes." + key, args);
+    }
+
+    /** The "Lay out" button: puts the chosen recipe's items on the table from the inventory. */
+    private final RecipePanel.Action layOutAction = new RecipePanel.Action() {
+        @Override
+        public Component label() {
+            if (Minecraft.getInstance().hasShiftDown() && !station.busy()) {
+                MaxLayout max = maxLayoutNow();
+                return max.moves().isEmpty() ? text("no_more_sets") : text("lay_out_all", max.sets());
+            }
+            int count = layable();
+            return count > 0 ? text("lay_out", count) : text(station.busy() ? "laying" : "nothing_to_lay");
+        }
+
+        @Override
+        public boolean active() {
+            return Minecraft.getInstance().hasShiftDown() && !station.busy() ? !maxLayoutNow().moves().isEmpty() : layable() > 0;
+        }
+
+        @Override
+        public void onAction() {
+            layOut(Minecraft.getInstance().hasShiftDown());
+        }
+
+        @Override
+        public List<Component> tooltip() {
+            List<Component> lines = new ArrayList<>();
+            lines.add(text(station.busy() ? "laying" : layable() > 0 ? "lay_out_tip" : "nothing_to_lay_tip"));
+            if (missingCount > 0) lines.add(text("lay_missing", missingCount).copy().withStyle(ChatFormatting.RED));
+            if (!station.busy() && !takeBackMoves().isEmpty()) lines.add(text("lay_take_back", takeBackMoves().size()).copy().withStyle(ChatFormatting.GRAY));
+            if (!station.busy() && stuck() > 0) lines.add(text("lay_no_room", stuck()).copy().withStyle(ChatFormatting.RED));
+            if (!station.busy()) {
+                MaxLayout max = maxLayoutNow();
+                // Shift only promises what the items at hand and the stack limits really allow.
+                lines.add((max.moves().isEmpty()
+                        ? text(max.current() > 0 ? "lay_all_full" : "lay_all_none")
+                        : text("lay_all_tip", max.sets())).copy().withStyle(ChatFormatting.GRAY));
+            }
+            return lines;
+        }
+    };
+
+    @Override
+    public RecipePanel.Action action() {
+        return layOutAction;
+    }
+
+    /** How many items "Lay out" would put down right now (0: nothing to do, or the hands are busy). */
+    private int layable() {
+        if (selected == null || station.busy()) return 0;
+        // the last recipe's leftovers in the way are taken back first; they may also belong in the new one
+        return takeBackMoves().isEmpty() ? layoutMoves().size() : layableAfterTakingBack();
+    }
+
+    /** Shift + "Lay out": the most whole sets the inventory allows (nothing while the hands are busy). */
+    private MaxLayout maxLayoutNow() {
+        return selected == null || station.busy() ? new MaxLayout(0, 0, List.of()) : maxLayout();
+    }
+
+    /** Lays out the chosen recipe: one set, or with {@code all} as many whole sets as possible. */
+    void layOut(boolean all) {
+        List<int[]> back = selected == null || station.busy() ? List.of() : takeBackMoves();
+        if (!back.isEmpty()) {
+            // take back what is in the way, then lay out from the inventory as it is after that
+            if (all ? maxLayoutNow().moves().isEmpty() : layable() == 0) return;
+            List<int[]> moves = new ArrayList<>(back);
+            moves.add(new int[]{-1, TableStation.REPLAN, all ? 1 : 0});
+            station.layOut(moves);
+            return;
+        }
+        List<int[]> moves = all ? maxLayoutNow().moves() : layable() > 0 ? layoutMoves() : List.of();
+        if (!moves.isEmpty()) station.layOut(moves);
+    }
+
+    @Override
+    public void select(@Nullable RecipePanel.Entry entry) {
+        selected = (Entry) entry;
+        selectedAt = Scene.clock();
         Arrays.fill(grid, null);
         refresh();
         revision++;

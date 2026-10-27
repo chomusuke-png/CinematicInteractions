@@ -459,7 +459,7 @@ final class FieldGuide {
     private boolean canHint(RecipeViewer.StationRecipe recipe) {
         Identifier id = recipe.recipeId();
         if (id == null) return false;
-        if (station instanceof TableStation table) return table.recipeBook.guide.entry(id) != null;
+        if (station instanceof TableStation table) return table.guide.entry(id) != null;
         if (station instanceof FurnaceStation furnace) return furnace.cookingInput(recipe.inputs()) != null;
         return false;
     }
@@ -468,8 +468,8 @@ final class FieldGuide {
         Identifier id = recipe.recipeId();
         if (id == null) return;
         if (station instanceof TableStation table) {
-            var entry = table.recipeBook.guide.entry(id);
-            if (entry != null) table.recipeBook.show(entry);
+            var entry = table.guide.entry(id);
+            if (entry != null) table.recipeBook.select(entry);
         } else if (station instanceof FurnaceStation furnace) {
             furnace.showHint(furnace.cookingInput(recipe.inputs()));
         }

@@ -226,7 +226,7 @@ public final class SceneScreen extends Screen {
         // looking round from behind, the panels give way to the view
         float look = (float) FreeLook.amount();
         boolean over = working() && drawer && !FreeLook.looking() && overPanel(mouseX, mouseY);
-        Scene.overPanel = over || station.choices().over(mouseX, mouseY) || (station instanceof TableStation table && table.recipeBook.over(mouseX, mouseY))
+        Scene.overPanel = over || station.choices().over(mouseX, mouseY) || (station.recipePanel() != null && station.recipePanel().over(mouseX, mouseY))
                 || (editor() != null && editor().over(mouseX, mouseY)) || guideShown() && guide.over(mouseX, mouseY);
         expand = Anim.approach(expand, over ? 1 : 0, 13, Scene.frameDt);
         layout();
@@ -486,8 +486,8 @@ public final class SceneScreen extends Screen {
         }
         inventoryEffects.action(mc.hasShiftDown() ? ContainerInput.QUICK_MOVE : ContainerInput.PICKUP);
         if (guideShown() && guide.click(mx, my, button)) return true;
-        if (Scene.station instanceof TableStation table && table.recipeBook.click(mx, my, button)) {
-            table.release(button);
+        if (Scene.station.recipePanel() != null && Scene.station.recipePanel().click(mx, my, button)) {
+            Scene.station.release(button);
             return true;
         }
         if (Scene.station.showsInventory() && overPanel(mx, my)) {
@@ -529,7 +529,7 @@ public final class SceneScreen extends Screen {
         }
         if (working() && editor() != null && editor().scroll(mx, my, scrollY)) return true;
         if (working() && guideShown() && guide.scroll(mx, my, scrollY)) return true;
-        if (working() && Scene.station instanceof TableStation table && table.recipeBook.scroll(mx, my, scrollY)) return true;
+        if (working() && Scene.station.recipePanel() != null && Scene.station.recipePanel().scroll(mx, my, scrollY)) return true;
         if (working() && !(Scene.station.showsInventory() && overPanel(mx, my))) {
             Scene.station.scroll(scrollY);
         }
@@ -543,7 +543,7 @@ public final class SceneScreen extends Screen {
         //?} else if <26.1 {
         /*if (working() && guideShown() && guide.charTyped(new CharacterEvent(c, 0))) return true;
         *///?}
-        if (working() && Scene.station instanceof TableStation table && table.recipeBook.charTyped(c, modifiers)) return true;
+        if (working() && Scene.station.recipePanel() != null && Scene.station.recipePanel().charTyped(c, modifiers)) return true;
         //? if >=26.1 {
         return field != null ? field.charTyped(new net.minecraft.client.input.CharacterEvent(c)) : super.charTyped(new net.minecraft.client.input.CharacterEvent(c));
         //?} else if <26.1 {
@@ -560,8 +560,8 @@ public final class SceneScreen extends Screen {
             if (button == 1 && Scene.station instanceof TableStation table) table.release(button);
             return true;
         }
-        if (working() && Scene.station instanceof TableStation table && table.recipeBook.over(mx, my)) {
-            table.release(button);
+        if (working() && Scene.station.recipePanel() != null && Scene.station.recipePanel().over(mx, my)) {
+            Scene.station.release(button);
             return true;
         }
         if (working()) {
@@ -614,7 +614,7 @@ public final class SceneScreen extends Screen {
         }
         inventoryEffects.action(mc.hasShiftDown() ? ContainerInput.QUICK_MOVE : ContainerInput.PICKUP);
         if (guideShown() && guide.keyPressed(new net.minecraft.client.input.KeyEvent(key, scanCode, modifiers))) return true;
-        if (Scene.station instanceof TableStation table && table.recipeBook.keyPressed(key, scanCode, modifiers)) return true;
+        if (Scene.station.recipePanel() != null && Scene.station.recipePanel().keyPressed(key, scanCode, modifiers)) return true;
         if (guideShown() && guide.viewerKey(key, scanCode, hoveredPanelItem())) return true;
         if (editor() != null && editor().keyPressed(key)) return true;
         if (Scene.station.keyPressed(key)) {

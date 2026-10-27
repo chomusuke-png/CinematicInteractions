@@ -922,13 +922,13 @@ public final class Showcase {
         step(3, () -> screenClick(0));
         step(15, () -> {
             shot("0d3_editor_recipe_ghosts");
-            double[] at = table().recipeBook.layPoint();
+            double[] at = table().recipeBook.actionPoint();
             pointGui(at[0], at[1]);
             screenClick(0);
         });
         step(60, () -> {
             check("editor recipe layout reaches adjusted cells", !table().result.isEmpty() && table().result.is(Items.WOODEN_PICKAXE)
-                    && table().recipeBook.guide.missingCount == 0, "result=" + table().result);
+                    && table().guide.missingCount == 0, "result=" + table().result);
             shot("0d4_editor_laid_out");
         });
         for (int[] rc : new int[][]{{0,0},{0,1},{0,2},{1,1},{2,1}}) {
@@ -1018,7 +1018,7 @@ public final class Showcase {
         step(4, () -> pointRecipe("diamond_pickaxe"));
         step(3, () -> screenClick(0));
         step(12, () -> {
-            var guide = table().recipeBook.guide;
+            var guide = table().guide;
             check("recipe missing diamonds", guide.selected != null && guide.missingCount == 3 && !guide.selected.craftable,
                     "missing=" + guide.missingCount);
             check("recipe search movement keys", Scene.phase == Scene.Phase.ACTIVE, "phase=" + Scene.phase);
@@ -1035,13 +1035,13 @@ public final class Showcase {
         });
         step(4, () -> shot("0r2_missing_diamonds"));
         step(2, () -> recipeControl(12, 52)); // only craftable recipes
-        step(4, () -> check("recipe availability filter", table().recipeBook.recipePoint(Identifier.withDefaultNamespace("diamond_pickaxe")) == null,
+        step(4, () -> check("recipe availability filter", table().recipePoint(Identifier.withDefaultNamespace("diamond_pickaxe")) == null,
                 "diamond pickaxe hidden"));
         step(2, () -> recipeSearch("wooden_pickaxe"));
         step(4, () -> pointRecipe("wooden_pickaxe"));
         step(3, () -> screenClick(0));
         step(10, () -> {
-            var guide = table().recipeBook.guide;
+            var guide = table().guide;
             check("recipe available planks and sticks", guide.selected != null && guide.selected.craftable && guide.missingCount == 0,
                     "missing=" + guide.missingCount);
             pointAside();
@@ -1054,7 +1054,7 @@ public final class Showcase {
         step(2, () -> point(0, 0));
         step(8, () -> clickCell(0, 0, 1));
         step(8, () -> {
-            check("recipe placed ingredient", table().recipeBook.guide.placed[0], "first plank accepted");
+            check("recipe placed ingredient", table().guide.placed[0], "first plank accepted");
             shot("0r4_partial_recipe");
         });
         step(2, () -> inventoryClick(36, 0));
@@ -1062,7 +1062,7 @@ public final class Showcase {
         step(2, () -> point(0, 1));
         step(8, () -> clickCell(0, 1, 1));
         step(8, () -> {
-            check("recipe wrong ingredient", table().recipeBook.guide.wrong(1), "cobblestone instead of planks");
+            check("recipe wrong ingredient", table().guide.wrong(1), "cobblestone instead of planks");
             shot("0r5_wrong_ingredient");
         });
         step(2, () -> inventoryClick(38, 0));
@@ -1079,7 +1079,7 @@ public final class Showcase {
         });
         step(2, () -> recipeControl(113, 12)); // fold away, keep the diagram
         step(15, () -> {
-            check("recipe folded guide retained", table().recipeBook.guide.selected != null, "selection retained");
+            check("recipe folded guide retained", table().guide.selected != null, "selection retained");
             pointAside();
             shot("0r6_folded_reference");
             var at = table().recipeBook.togglePoint();
@@ -1087,7 +1087,7 @@ public final class Showcase {
             screenClick(0);
         });
         step(15, () -> recipeControl(113, 194));
-        step(3, () -> check("recipe clear guide", table().recipeBook.guide.selected == null, "cleared"));
+        step(3, () -> check("recipe clear guide", table().guide.selected == null, "cleared"));
         tableRecipeLayoutScript();
         step(2, () -> recipeControl(113, 12));
         step(15, Showcase::pointAside);
@@ -1105,7 +1105,7 @@ public final class Showcase {
         step(3, () -> point(2, 2));
         step(6, () -> clickCell(2, 2, 0));
         step(8, () -> {
-            var guide = table().recipeBook.guide;
+            var guide = table().guide;
             //? if >=26.2 {
             var contents = ClientTables.get(table().pos);
             //?}
@@ -1129,7 +1129,7 @@ public final class Showcase {
         step(3, () -> pointRecipe("stick"));
         step(3, () -> screenClick(0));
         step(6, () -> {
-            var guide = table().recipeBook.guide;
+            var guide = table().guide;
             check("recipe narrow pattern centered", !TableRecipeGuide.empty(guide.grid[1]) && !TableRecipeGuide.empty(guide.grid[4]) && TableRecipeGuide.empty(guide.grid[0]),
                     "one-column pattern");
         });
@@ -1137,7 +1137,7 @@ public final class Showcase {
         step(3, () -> point(1, 0));
         step(6, () -> clickCell(1, 0, 1));
         step(8, () -> {
-            var guide = table().recipeBook.guide;
+            var guide = table().guide;
             check("recipe shaped follows offset", guide.placed[3] && (!TableRecipeGuide.empty(guide.grid[0]) || !TableRecipeGuide.empty(guide.grid[6])) && TableRecipeGuide.empty(guide.grid[1]),
                     "pattern moved to left column");
             shot("0r8_offset_recipe");
@@ -1152,7 +1152,7 @@ public final class Showcase {
         step(3, () -> point(2, 0));
         step(6, () -> clickCell(2, 0, 1));
         step(8, () -> {
-            var guide = table().recipeBook.guide;
+            var guide = table().guide;
             check("recipe shaped follows mirror", guide.placed[6] && TableRecipeGuide.empty(guide.grid[7]) && guide.grid[4].test(new ItemStack(Items.OAK_PLANKS)),
                     "mirrored axe pattern");
             shot("0r9_mirrored_recipe");
@@ -1162,7 +1162,7 @@ public final class Showcase {
         step(6, () -> inventoryClick(37, 0));
         step(4, () -> {
             BlockPos testPos = TABLE.offset(100, 0, 0);
-            var entry = table().recipeBook.guide.entries.stream().filter(e -> e.holder.id().identifier().equals(Identifier.withDefaultNamespace("wooden_pickaxe"))).findFirst().orElseThrow();
+            var entry = table().guide.entries.stream().filter(e -> e.holder.id().identifier().equals(Identifier.withDefaultNamespace("wooden_pickaxe"))).findFirst().orElseThrow();
             Direction[] sides = {Direction.SOUTH, Direction.NORTH, Direction.EAST, Direction.WEST};
             int[] firstCells = {0, 8, 6, 2};
             try {
@@ -1212,7 +1212,7 @@ public final class Showcase {
     }
 
     private static void pointRecipe(String id) {
-        var at = table().recipeBook.recipePoint(Identifier.withDefaultNamespace(id));
+        var at = table().recipePoint(Identifier.withDefaultNamespace(id));
         check("recipe found " + id, at != null, "reference lookup");
         if (at != null) pointGui(at[0], at[1]);
     }
@@ -3998,7 +3998,7 @@ public final class Showcase {
         step(4, () -> pointRecipe("wooden_pickaxe"));
         step(3, () -> screenClick(0));
         step(10, () -> {
-            double[] at = table().recipeBook.layPoint();
+            double[] at = table().recipeBook.actionPoint();
             pointGui(at[0], at[1]);
         });
         step(6, () -> {
@@ -4033,7 +4033,7 @@ public final class Showcase {
         step(4, () -> pointRecipe("diamond_pickaxe"));
         step(3, () -> screenClick(0));
         step(10, () -> {
-            double[] at = table().recipeBook.layPoint();
+            double[] at = table().recipeBook.actionPoint();
             pointGui(at[0], at[1]);
             screenClick(0);
         });
@@ -4043,8 +4043,8 @@ public final class Showcase {
             for (int i = 0; entry != null && i < 9; i++) {
                 laid += entry.items[i].isEmpty() ? 0 : 1;
             }
-            check("lay out: only the sticks go down, the diamonds stay see-through", laid == 2 && table().recipeBook.guide.missingCount == 3,
-                    "laid=" + laid + " missing=" + table().recipeBook.guide.missingCount);
+            check("lay out: only the sticks go down, the diamonds stay see-through", laid == 2 && table().guide.missingCount == 3,
+                    "laid=" + laid + " missing=" + table().guide.missingCount);
             pointAside();
             shot("y4_partial");
         });

@@ -68,11 +68,11 @@ public final class ClientOnlySmoke {
                         || Scene.phase != Scene.Phase.ACTIVE) return;
                 if (mc.player.position().distanceToSqr(original) > 0.01) { fail("moved on approach"); return; }
                 TableStation table = Scene.station(TableStation.class);
-                var plankGuide = table.recipeBook.guide.entries.stream()
+                var plankGuide = table.guide.entries.stream()
                         .filter(entry -> entry.result.getItem() == Items.OAK_PLANKS).findFirst();
                 if (plankGuide.isEmpty()) return;
-                table.recipeBook.guide.select(plankGuide.get());
-                if (java.util.Arrays.stream(table.recipeBook.guide.grid).allMatch(TableRecipeGuide::empty)) {
+                table.guide.select(plankGuide.get());
+                if (java.util.Arrays.stream(table.guide.grid).allMatch(TableRecipeGuide::empty)) {
                     fail("vanilla recipe guide has no ingredient layout"); return;
                 }
                 //? if >=26.2 {

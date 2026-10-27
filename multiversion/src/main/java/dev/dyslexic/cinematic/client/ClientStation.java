@@ -1,6 +1,7 @@
 package dev.dyslexic.cinematic.client;
 
 import com.mojang.blaze3d.vertex.PoseStack;
+import dev.dyslexic.cinematic.api.client.RecipePanel;
 import dev.dyslexic.cinematic.station.StationKind;
 import java.util.List;
 import javax.annotation.Nullable;
@@ -65,6 +66,11 @@ public abstract class ClientStation {
 
     public Vec3 center() {
         return Vec3.atCenterOf(pos);
+    }
+
+    /** Whether the block at {@code at} belongs to this station (a block of a multi-block one): not another to move over to. */
+    public boolean partOf(BlockPos at) {
+        return pos.equals(at);
     }
 
     /**
@@ -323,6 +329,16 @@ public abstract class ClientStation {
 
     /** Extras over the scene (progress indicators...). */
     public void renderScreen(GuiGraphicsExtractor graphics, Font font, float alpha) {}
+
+    /**
+     * The recipe reference this station shows, if any: the scene screen sends it the mouse and keys. The station still
+     * ticks and draws it itself (from {@link #tick} and {@link #renderScreen}), and draws what choosing a recipe means
+     * in the world.
+     */
+    @Nullable
+    public RecipePanel recipePanel() {
+        return null;
+    }
 
     private final RecipeChoiceStrip choiceStrip = new RecipeChoiceStrip();
 
