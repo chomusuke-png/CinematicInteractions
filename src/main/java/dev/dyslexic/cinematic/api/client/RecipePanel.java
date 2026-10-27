@@ -43,7 +43,15 @@ public final class RecipePanel {
         default List<Component> details() {
             return List.of();
         }
+
+        /** What it takes, shown under the chosen entry; none for a recipe shown some other way (a diagram). */
+        default List<Material> materials() {
+            return List.of();
+        }
     }
+
+    /** One material of an entry: the item (any one that will do), how many it takes and how many the player has. */
+    public record Material(ItemStack item, int need, int have) {}
 
     /** The recipes the panel lists, and what choosing one does. */
     public interface Source {
@@ -92,9 +100,11 @@ public final class RecipePanel {
         }
     }
 
-    private static final int WIDTH = 128, HEIGHT = 226, CELL = 27, COLS = 4, ROWS = 4;
+    private static final int WIDTH = 128, BASE_HEIGHT = 226, CELL = 27, COLS = 4, ROWS = 4;
     /** The action button under the chosen recipe. */
-    private static final int ACTION_Y = 205, ACTION_H = 15;
+    private static final int BASE_ACTION_Y = 205, ACTION_H = 15;
+    /** The chosen entry's materials, under its name: rows of icons. */
+    private static final int MATERIALS_Y = 202, MATERIAL = 18, MATERIAL_COLS = 6;
     private static final int GRID_X = 10, GRID_Y = 61, PAGE_SIZE = COLS * ROWS;
     private static final ItemStack BOOK = new ItemStack(Items.BOOK);
     private final Source source;
@@ -143,7 +153,7 @@ public final class RecipePanel {
     private double localX(double mx) { return (mx - x) / scale; }
     private double localY(double my) { return (my - y) / scale; }
     private boolean inPanel(double mx, double my) {
-        return shown > 0.02 && localX(mx) >= 0 && localX(mx) < WIDTH && localY(my) >= 0 && localY(my) < HEIGHT;
+        return shown > 0.02 && localX(mx) >= 0 && localX(mx) < WIDTH && localY(my) >= 0 && localY(my) < height();
     }
     private boolean inToggle(double mx, double my) {
         return !open && shown < 0.02 && mx >= 8 && mx < 8 + 32 * scale && my >= toggleY && my < toggleY + 28 * scale;
@@ -190,7 +200,7 @@ public final class RecipePanel {
         g.pose().pushPose();
         g.pose().translate(x, y, 0);
         g.pose().scale(scale, scale, 1);
-        glass(g, WIDTH, HEIGHT, a);
+        glass(g, WIDTH, height(), a);
         g.drawString(font, source.title(), 9, 9, color(a, 242, 234, 216), false);
         g.drawString(font, "−", WIDTH - 17, 8, color(a * 0.8f, 242, 234, 216), false);
         g.fill(8, 25, WIDTH - 8, 43, color(a * 0.08f, 255, 255, 255));
@@ -228,8 +238,49 @@ public final class RecipePanel {
         } else {
             g.drawString(font, text("choose"), 9, 190, color(a * 0.55f, 242, 234, 216), false);
         }
+        drawMaterials(g, font, a, mouse);
         drawAction(g, font, a, mouse);
         g.pose().popPose();
+    }
+
+    private List<Material> materials() {
+        Entry selected = source.selected();
+        return selected == null ? List.of() : selected.materials();
+    }
+
+    private int materialRows() {
+        return (materials().size() + MATERIAL_COLS - 1) / MATERIAL_COLS;
+    }
+
+    /** The panel grows by the rows of the chosen entry's materials, and its button moves down under them. */
+    private int height() { return BASE_HEIGHT + materialRows() * MATERIAL; }
+    private int actionY() { return BASE_ACTION_Y + materialRows() * MATERIAL; }
+    /** The bottom of the chosen entry's name row (a click there clears the choice). */
+    private int nameBottom() { return materialRows() > 0 ? MATERIALS_Y : actionY(); }
+
+    private int materialAt(double mx, double my) {
+        double lx = localX(mx) - 9, ly = localY(my) - MATERIALS_Y;
+        if (lx < 0 || lx >= MATERIAL_COLS * MATERIAL || ly < 0 || ly >= materialRows() * MATERIAL) return -1;
+        int index = (int) (ly / MATERIAL) * MATERIAL_COLS + (int) (lx / MATERIAL);
+        return index < materials().size() ? index : -1;
+    }
+
+    /** Each material with how many it takes, underlined green when the player has enough and red when not. */
+    private void drawMaterials(GuiGraphics g, Font font, float a, double[] mouse) {
+        List<Material> materials = materials();
+        int hover = materialAt(mouse[0], mouse[1]);
+        for (int i = 0; i < materials.size(); i++) {
+            Material material = materials.get(i);
+            int mx = 9 + i % MATERIAL_COLS * MATERIAL, my = MATERIALS_Y + i / MATERIAL_COLS * MATERIAL;
+            g.fill(mx, my, mx + MATERIAL - 1, my + MATERIAL - 1, color(a * (i == hover ? 0.19f : 0.06f), 255, 255, 255));
+            g.setColor(1, 1, 1, a);
+            g.renderItem(material.item(), mx + 1, my);
+            g.renderItemDecorations(font, material.item(), mx + 1, my, String.valueOf(material.need()));
+            g.setColor(1, 1, 1, 1);
+            boolean enough = material.have() >= material.need();
+            g.fill(mx + 2, my + MATERIAL - 2, mx + MATERIAL - 3, my + MATERIAL - 1,
+                    enough ? color(a * 0.8f, 143, 211, 176) : color(a * 0.85f, 255, 106, 98));
+        }
     }
 
     @Nullable
@@ -239,7 +290,7 @@ public final class RecipePanel {
 
     private boolean inAction(double mx, double my) {
         double lx = localX(mx), ly = localY(my);
-        return open && shown > 0.9 && action() != null && lx >= 8 && lx < WIDTH - 8 && ly >= ACTION_Y && ly < ACTION_Y + ACTION_H;
+        return open && shown > 0.9 && action() != null && lx >= 8 && lx < WIDTH - 8 && ly >= actionY() && ly < actionY() + ACTION_H;
     }
 
     private void drawAction(GuiGraphics g, Font font, float a, double[] mouse) {
@@ -249,11 +300,11 @@ public final class RecipePanel {
         }
         boolean live = action.active();
         boolean hover = live && inAction(mouse[0], mouse[1]);
-        g.fill(8, ACTION_Y, WIDTH - 8, ACTION_Y + ACTION_H, color(a * (hover ? 0.3f : live ? 0.16f : 0.06f), 255, 226, 150));
-        g.fill(8, ACTION_Y + ACTION_H - 1, WIDTH - 8, ACTION_Y + ACTION_H, color(a * (live ? 0.6f : 0.15f), 255, 226, 150));
+        g.fill(8, actionY(), WIDTH - 8, actionY() + ACTION_H, color(a * (hover ? 0.3f : live ? 0.16f : 0.06f), 255, 226, 150));
+        g.fill(8, actionY() + ACTION_H - 1, WIDTH - 8, actionY() + ACTION_H, color(a * (live ? 0.6f : 0.15f), 255, 226, 150));
         Component label = action.label();
         int w = font.width(label);
-        g.drawString(font, label, (WIDTH - w) / 2, ACTION_Y + 4, color(a * (live ? 0.95f : 0.45f), 242, 234, 216), false);
+        g.drawString(font, label, (WIDTH - w) / 2, actionY() + 4, color(a * (live ? 0.95f : 0.45f), 242, 234, 216), false);
     }
 
     private static void glass(GuiGraphics g, int w, int h, float alpha) {
@@ -289,7 +340,7 @@ public final class RecipePanel {
         else if (ly >= 169 && ly < 184) {
             if (lx < 32) page = Math.max(0, page - 1);
             else if (lx > WIDTH - 32) page = Math.min(pages() - 1, page + 1);
-        } else if (ly >= 186 && ly < ACTION_Y && lx >= WIDTH - 25) source.select(null);
+        } else if (ly >= 186 && ly < nameBottom() && lx >= WIDTH - 25) source.select(null);
         else {
             int index = entryAt(mx, my);
             if (index >= 0) source.select(filtered.get(index));
@@ -323,7 +374,14 @@ public final class RecipePanel {
         if (ly < 23 && lx >= WIDTH - 25) return List.of(text("hide"));
         if (inAction(mx, my)) return action().tooltip();
         Entry selected = source.selected();
-        if (ly >= 186 && ly < ACTION_Y && selected != null) return List.of(selected.result().getHoverName(), text("clear"));
+        if (ly >= 186 && ly < nameBottom() && selected != null) return List.of(selected.result().getHoverName(), text("clear"));
+        int material = materialAt(mx, my);
+        if (material >= 0) {
+            Material m = materials().get(material);
+            List<Component> lines = new ArrayList<>(Screen.getTooltipFromItem(Minecraft.getInstance(), m.item()));
+            lines.add(text("material", m.have(), m.need()).copy().withStyle(m.have() >= m.need() ? ChatFormatting.GREEN : ChatFormatting.RED));
+            return lines;
+        }
         int index = entryAt(mx, my);
         if (index < 0) return null;
         var entry = filtered.get(index);
@@ -336,7 +394,7 @@ public final class RecipePanel {
 
     // Coordinates expose actual rendered controls to the scripted in-game walkthrough.
     public double[] togglePoint() { return new double[]{24 * scale + 8, toggleY + 14 * scale}; }
-    public double[] actionPoint() { return controlPoint(WIDTH / 2, ACTION_Y + ACTION_H / 2); }
+    public double[] actionPoint() { return controlPoint(WIDTH / 2, actionY() + ACTION_H / 2); }
     public double[] controlPoint(int px, int py) { return new double[]{x + px * scale, y + py * scale}; }
 
     /** Where the first entry {@code which} accepts is drawn, turning to its page; {@code null} if none is listed. */

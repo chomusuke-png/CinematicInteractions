@@ -526,5 +526,6 @@
   "cinematic.recipes.lay_no_room": "Некуда вернуть: %s — освободи место в инвентаре",
   "cinematic.choices.title": "Что получится · Polymorph",
   "cinematic.choices.in_use": "Выбрано: будет сделано это",
-  "cinematic.choices.pick": "Клик — выбрать этот результат"
+  "cinematic.choices.pick": "Клик — выбрать этот результат",
+  "cinematic.recipes.material": "Есть %1$s из %2$s"
 }

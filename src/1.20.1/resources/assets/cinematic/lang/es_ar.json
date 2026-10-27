@@ -528,5 +528,6 @@
   "cinematic.recipes.lay_no_room": "No hay sitio para recogerlo: %s — libera espacio en el inventario",
   "cinematic.choices.title": "Qué se fabrica · Polymorph",
   "cinematic.choices.in_use": "Elegido: esto es lo que se fabricará",
-  "cinematic.choices.pick": "Haz clic para elegir este resultado"
+  "cinematic.choices.pick": "Haz clic para elegir este resultado",
+  "cinematic.recipes.material": "Tienes %1$s de %2$s"
 }

@@ -68,6 +68,11 @@ public abstract class ClientStation {
         return Vec3.atCenterOf(pos);
     }
 
+    /** Whether the block at {@code at} belongs to this station (a block of a multi-block one): not another to move over to. */
+    public boolean partOf(BlockPos at) {
+        return pos.equals(at);
+    }
+
     /**
      * The side of a block nearest to the player among those the station may be worked from
      * ({@link StationKind#sides}) that leave room to stand and lean in: first where the player could stand at their own

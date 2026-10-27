@@ -526,5 +526,6 @@
   "cinematic.recipes.lay_no_room": "No room to take back: %s — free some inventory space",
   "cinematic.choices.title": "What it makes · Polymorph",
   "cinematic.choices.in_use": "Chosen: this is what will be made",
-  "cinematic.choices.pick": "Click to choose this result"
+  "cinematic.choices.pick": "Click to choose this result",
+  "cinematic.recipes.material": "You have %1$s of %2$s"
 }

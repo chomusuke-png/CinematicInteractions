@@ -414,7 +414,7 @@ public final class Scene {
         Vec3 eye = mc.player.getEyePosition();
         BlockHitResult hit = mc.level.clip(new ClipContext(ray[0], ray[0].add(ray[1].scale(NEIGHBOR_REACH + 2)), ClipContext.Block.OUTLINE,
                 ClipContext.Fluid.NONE, mc.player));
-        if (hit.getType() != HitResult.Type.BLOCK || hit.getBlockPos().equals(station.pos)
+        if (hit.getType() != HitResult.Type.BLOCK || station.partOf(hit.getBlockPos())
                 || hit.getBlockPos().getCenter().distanceTo(eye) > NEIGHBOR_REACH) {
             return;
         }
