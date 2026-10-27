@@ -235,7 +235,7 @@ public final class SceneScreen extends Screen {
         // looking round from behind, the panels give way to the view
         float look = (float) FreeLook.amount();
         boolean over = working() && drawer && !FreeLook.looking() && overPanel(mouseX, mouseY);
-        Scene.overPanel = over || (station instanceof TableStation table && table.recipeBook.over(mouseX, mouseY))
+        Scene.overPanel = over || (station.recipePanel() != null && station.recipePanel().over(mouseX, mouseY))
                 || (editor() != null && editor().over(mouseX, mouseY)) || guideShown() && guide.over(mouseX, mouseY)
                 //? if !forge {
                 || station.choices() != null && station.choices().over(mouseX, mouseY);
@@ -502,8 +502,8 @@ public final class SceneScreen extends Screen {
         if (guideShown() && guide.click(mx, my, button)) {
             return true;
         }
-        if (Scene.station instanceof TableStation table && table.recipeBook.click(mx, my, button)) {
-            table.release(button);
+        if (Scene.station.recipePanel() != null && Scene.station.recipePanel().click(mx, my, button)) {
+            Scene.station.release(button);
             return true;
         }
         if (Scene.station.showsInventory() && overPanel(mx, my)) {
@@ -538,7 +538,7 @@ public final class SceneScreen extends Screen {
         }
         if (working() && editor() != null && editor().scroll(mx, my, scrollY)) return true;
         if (working() && guideShown() && guide.scroll(mx, my, scrollY)) return true;
-        if (working() && Scene.station instanceof TableStation table && table.recipeBook.scroll(mx, my, scrollY)) return true;
+        if (working() && Scene.station.recipePanel() != null && Scene.station.recipePanel().scroll(mx, my, scrollY)) return true;
         if (working() && !(Scene.station.showsInventory() && overPanel(mx, my))) {
             Scene.station.scroll(scrollY);
         }
@@ -549,7 +549,7 @@ public final class SceneScreen extends Screen {
     public boolean charTyped(char c, int modifiers) {
         if (working() && editor() != null && editor().editing()) return true;
         if (working() && guideShown() && guide.charTyped(c, modifiers)) return true;
-        if (working() && Scene.station instanceof TableStation table && table.recipeBook.charTyped(c, modifiers)) return true;
+        if (working() && Scene.station.recipePanel() != null && Scene.station.recipePanel().charTyped(c, modifiers)) return true;
         return field != null ? field.charTyped(c, modifiers) : super.charTyped(c, modifiers);
     }
 
@@ -564,9 +564,9 @@ public final class SceneScreen extends Screen {
             if (button == 1 && Scene.station instanceof TableStation table) table.release(button);
             return true;
         }
-        if (working() && Scene.station instanceof TableStation table && table.recipeBook.over(mx, my)) {
+        if (working() && Scene.station.recipePanel() != null && Scene.station.recipePanel().over(mx, my)) {
             // A right-drag stops painting over the panel; a left-drag only stops gathering and still ends on release.
-            if (button == 1) table.release(button);
+            if (button == 1) Scene.station.release(button);
             return true;
         }
         if (working()) {
@@ -621,7 +621,7 @@ public final class SceneScreen extends Screen {
         }
         inventoryEffects.action(hasShiftDown() ? ClickType.QUICK_MOVE : ClickType.PICKUP);
         if (guideShown() && guide.keyPressed(key, scanCode, modifiers)) return true;
-        if (Scene.station instanceof TableStation table && table.recipeBook.keyPressed(key, scanCode, modifiers)) return true;
+        if (Scene.station.recipePanel() != null && Scene.station.recipePanel().keyPressed(key, scanCode, modifiers)) return true;
         if (guideShown() && guide.viewerKey(key, scanCode, hoveredPanelItem())) return true;
         if (editor() != null && editor().keyPressed(key)) return true;
         if (Scene.station.keyPressed(key)) {

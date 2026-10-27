@@ -6,6 +6,7 @@ import com.mojang.math.Axis;
 //? if fabric && <1.21 {
 /*import dev.dyslexic.cinematic.net.PacketDistributor;
 *///?}
+import dev.dyslexic.cinematic.api.client.RecipePanel;
 import dev.dyslexic.cinematic.net.StationActionPayload;
 import dev.dyslexic.cinematic.station.StationKind;
 import dev.dyslexic.cinematic.table.TableCrafting;
@@ -62,7 +63,9 @@ public final class TableStation extends ClientStation {
     private static final double FADE_RATE = 14;
 
     public final Vec3 top;
-    final TableRecipeBook recipeBook;
+    final TableRecipeGuide guide;
+    /** The recipe reference on the left; choosing a recipe shows its diagram on the tabletop ({@link #drawDiagram}). */
+    final RecipePanel recipeBook;
     final TableGridEditor gridEditor;
     public int hoverCell = -1;
     public boolean hoverResult;
@@ -91,7 +94,8 @@ public final class TableStation extends ClientStation {
         super(pos, side);
         top = new Vec3(pos.getX() + 0.5, pos.getY() + 1.0, pos.getZ() + 0.5);
         Arrays.fill(itemOpacity, 1f);
-        recipeBook = new TableRecipeBook(this);
+        guide = new TableRecipeGuide(this);
+        recipeBook = new RecipePanel(guide);
         gridEditor = new TableGridEditor(this);
     }
 
@@ -197,7 +201,6 @@ public final class TableStation extends ClientStation {
             return;
         }
         ClientTables.Entry entry = ClientTables.get(pos);
-        TableRecipeGuide guide = recipeBook.guide;
         int target = -1;
         for (int logical = 0; logical < TableGrid.CELLS && target < 0 && guide.selected != null; logical++) {
             int world = TableGrid.worldIndex(side, logical / 3, logical % 3);
@@ -282,7 +285,6 @@ public final class TableStation extends ClientStation {
         /*if (waited < 0.1 || !clear && waited < REPLAN_WAIT) return;
         *///?}
         boolean all = laying[2] == 1;
-        TableRecipeGuide guide = recipeBook.guide;
         guide.tick();
         for (int[] move : all ? guide.maxLayout().moves() : guide.layoutMoves()) {
             if (move[1] >= -1) layQueue.add(move);
@@ -910,7 +912,7 @@ public final class TableStation extends ClientStation {
         drawResult(pose, buffers, camera, light);
         drawLayItem(pose, buffers, camera, light);
         drawSpreadPreview(pose, buffers, camera, light);
-        recipeBook.renderWorld(pose, buffers, camera, light);
+        drawDiagram(pose, buffers, camera, light);
     }
 
     /** While a left-drag gathers cells, the empty ones show a faint copy of what will land there. */
@@ -1042,8 +1044,10 @@ public final class TableStation extends ClientStation {
         double[] mouse = Picking.mouseGui();
         List<Component> editorTip = gridEditor.tooltip(mouse[0], mouse[1]);
         if (editorTip != null || gridEditor.editing()) return editorTip;
-        List<Component> guide = recipeBook.tooltip(mouse[0], mouse[1]);
-        if (guide != null || recipeBook.over(mouse[0], mouse[1])) return guide;
+        List<Component> panelTip = recipeBook.tooltip(mouse[0], mouse[1]);
+        if (panelTip != null || recipeBook.over(mouse[0], mouse[1])) return panelTip;
+        List<Component> diagramTip = diagramTooltip();
+        if (diagramTip != null) return diagramTip;
         int spread = Integer.bitCount(spreadCells());
         if (spread > 0) {
             int share = spreadShare();
@@ -1075,5 +1079,88 @@ public final class TableStation extends ClientStation {
     public Component hint() {
         if (gridEditor.editing()) return TableGridEditor.text("hint");
         return Component.translatable("cinematic.hint.table");
+    }
+
+    @Override
+    public RecipePanel recipePanel() {
+        return recipeBook;
+    }
+
+    /** For the scripted walkthrough: where a recipe is listed in the reference, or {@code null} if it is not. */
+    @Nullable
+    double[] recipePoint(net.minecraft.resources.ResourceLocation id) {
+        return recipeBook.entryPoint(e -> ((TableRecipeGuide.Entry) e).holder.id().equals(id));
+    }
+
+    /** The chosen recipe's cell under the mouse: what goes there, or that its item is wrong. */
+    @Nullable
+    private List<Component> diagramTooltip() {
+        if (guide.selected == null || hoverCell < 0) return null;
+        int cell = logicalCell(hoverCell);
+        if (guide.grid[cell].isEmpty()) return guide.wrong(cell) ? List.of(recipeText("extra").copy().withStyle(ChatFormatting.RED)) : null;
+        ItemStack expected = guide.placed[cell] ? ItemStack.EMPTY : guide.ghost(cell);
+        if (expected.isEmpty()) return null;
+        return List.of(expected.getHoverName(), recipeText(guide.wrong(cell) ? "wrong" : guide.missing[cell] ? "missing" : "place")
+                .copy().withStyle(guide.wrong(cell) || guide.missing[cell] ? ChatFormatting.RED : ChatFormatting.GRAY));
+    }
+
+    private static Component recipeText(String key) {
+        return Component.translatable("cinematic.recipes." + key);
+    }
+
+    private int logicalCell(int world) {
+        for (int i = 0; i < 9; i++) if (TableGrid.worldIndex(side, i / 3, i % 3) == world) return i;
+        return 0;
+    }
+
+    /** The chosen recipe's see-through diagram on the tabletop: a rim on each of its cells and a ghost of what goes there. */
+    private void drawDiagram(PoseStack pose, MultiBufferSource buffers, Vec3 cam, int light) {
+        if (guide.selected == null || craftProgress() >= 0) return;
+        if (buffers instanceof MultiBufferSource.BufferSource source) source.endBatch();
+        float appear = (float) Anim.smoother((Scene.clock() - guide.selectedAt) / 0.28);
+        for (int logical = 0; logical < 9; logical++) {
+            boolean wrong = guide.wrong(logical);
+            if (guide.grid[logical].isEmpty() && !wrong) continue;
+            int world = TableGrid.worldIndex(side, logical / 3, logical % 3);
+            TableLayout layout = TableLayouts.current();
+            Vec3 base = layout.cell(pos, world).add(0, 0.002, 0);
+            boolean red = guide.missing[logical] || wrong;
+            int r = red ? 255 : guide.placed[logical] ? 143 : 166;
+            int g = red ? 106 : guide.placed[logical] ? 211 : 211;
+            int b = red ? 98 : guide.placed[logical] ? 176 : 235;
+            pose.pushPose();
+            layout.cellPose(pose, pos, world, cam);
+            drawRim(pose, buffers, Vec3.ZERO, r, g, b, appear * (guide.placed[logical] ? 0.3f : 0.7f));
+            pose.popPose();
+            if (!guide.placed[logical] && !wrong) {
+                layout.renderItem(pose, buffers, cam, guide.ghost(logical), base, side, world, 1, 0, light, appear * 0.28f, false);
+            }
+        }
+        if (buffers instanceof MultiBufferSource.BufferSource source) source.endBatch();
+    }
+
+    private static void drawRim(PoseStack pose, MultiBufferSource buffers, Vec3 at, int r, int g, int b, float alpha) {
+        double h = TableGrid.CELL / 2 - 0.009, t = 0.004;
+        VertexConsumer out = buffers.getBuffer(RenderType.lightning());
+        Matrix4f m = pose.last().pose();
+        strip(out, m, at, -h, -h, h, -h + t, r, g, b, alpha);
+        strip(out, m, at, -h, h - t, h, h, r, g, b, alpha);
+        strip(out, m, at, -h, -h, -h + t, h, r, g, b, alpha);
+        strip(out, m, at, h - t, -h, h, h, r, g, b, alpha);
+    }
+
+    private static void strip(VertexConsumer out, Matrix4f m, Vec3 at, double x0, double z0, double x1, double z1, int r, int g, int b, float a) {
+        int alpha = Math.round(a * 255);
+        //? if >=1.21 {
+        out.addVertex(m, (float) (at.x + x0), (float) at.y, (float) (at.z + z0)).setColor(r, g, b, alpha);
+        out.addVertex(m, (float) (at.x + x0), (float) at.y, (float) (at.z + z1)).setColor(r, g, b, alpha);
+        out.addVertex(m, (float) (at.x + x1), (float) at.y, (float) (at.z + z1)).setColor(r, g, b, alpha);
+        out.addVertex(m, (float) (at.x + x1), (float) at.y, (float) (at.z + z0)).setColor(r, g, b, alpha);
+        //?} else if <1.21 {
+        /*out.addVertex(m, (float) (at.x + x0), (float) at.y, (float) (at.z + z0)).color(r, g, b, alpha).endVertex();
+        out.addVertex(m, (float) (at.x + x0), (float) at.y, (float) (at.z + z1)).color(r, g, b, alpha).endVertex();
+        out.addVertex(m, (float) (at.x + x1), (float) at.y, (float) (at.z + z1)).color(r, g, b, alpha).endVertex();
+        out.addVertex(m, (float) (at.x + x1), (float) at.y, (float) (at.z + z0)).color(r, g, b, alpha).endVertex();
+        *///?}
     }
 }

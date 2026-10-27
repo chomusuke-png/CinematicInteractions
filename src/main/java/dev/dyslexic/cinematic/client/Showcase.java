@@ -738,7 +738,7 @@ public final class Showcase {
     }
 
     private static void selectRecipe(String id) {
-        TableRecipeGuide guide = table().recipeBook.guide;
+        TableRecipeGuide guide = table().guide;
         guide.tick();
         guide.select(guide.entry(net.minecraft.resources.ResourceLocation.withDefaultNamespace(id)));
         guide.tick();
@@ -763,10 +763,10 @@ public final class Showcase {
         step(4, () -> server(p -> putOnTable(p, 1, 1, new ItemStack(Items.IRON_INGOT))));
         step(10, () -> {
             selectRecipe("lapis_block");
-            TableRecipeGuide guide = table().recipeBook.guide;
+            TableRecipeGuide guide = table().guide;
             check("2.1 lapis over an iron ingot: something to lay out", guide.layableAfterTakingBack() == 9 && guide.takeBackMoves().size() == 1,
                     "after=" + guide.layableAfterTakingBack() + " back=" + guide.takeBackMoves().size());
-            table().recipeBook.layOut(false);
+            table().guide.layOut(false);
         });
         step(8, () -> shot("tb1_taking_back"));
         step(70, () -> {
@@ -787,7 +787,7 @@ public final class Showcase {
         });
         step(10, () -> {
             selectRecipe("chest");
-            table().recipeBook.layOut(false);
+            table().guide.layOut(false);
         });
         step(100, () -> {
             server(p -> {
@@ -810,7 +810,7 @@ public final class Showcase {
         });
         step(10, () -> {
             selectRecipe("stick");
-            table().recipeBook.layOut(true);
+            table().guide.layOut(true);
         });
         step(100, () -> {
             server(p -> check("2.1 Shift sticks: the cobblestone back, all twenty planks laid in two cells", onTableCount(p, Items.COBBLESTONE) == 0
@@ -831,9 +831,9 @@ public final class Showcase {
         });
         step(10, () -> {
             selectRecipe("lapis_block");
-            check("2.1 no room: the ingot cannot go back", table().recipeBook.guide.stuck() == 1 && table().recipeBook.guide.takeBackMoves().isEmpty(),
-                    "stuck=" + table().recipeBook.guide.stuck());
-            table().recipeBook.layOut(false);
+            check("2.1 no room: the ingot cannot go back", table().guide.stuck() == 1 && table().guide.takeBackMoves().isEmpty(),
+                    "stuck=" + table().guide.stuck());
+            table().guide.layOut(false);
         });
         step(90, () -> server(p -> check("2.1 no room: the ingot stays on the table, the lapis round it, nothing lost",
                 onTableCount(p, Items.IRON_INGOT) == 1 && onTableCount(p, Items.LAPIS_LAZULI) == 8 && heldEverywhere(p, Items.LAPIS_LAZULI) == 9,
@@ -1637,7 +1637,7 @@ public final class Showcase {
     }
 
     private static void selectRecipe(String id) {
-        TableRecipeGuide guide = table().recipeBook.guide;
+        TableRecipeGuide guide = table().guide;
         guide.tick();
         guide.select(guide.entry(new net.minecraft.resources.ResourceLocation(id)));
         guide.tick();
@@ -1662,10 +1662,10 @@ public final class Showcase {
         step(4, () -> server(p -> putOnTable(p, 1, 1, new ItemStack(Items.IRON_INGOT))));
         step(10, () -> {
             selectRecipe("lapis_block");
-            TableRecipeGuide guide = table().recipeBook.guide;
+            TableRecipeGuide guide = table().guide;
             check("2.1 lapis over an iron ingot: something to lay out", guide.layableAfterTakingBack() == 9 && guide.takeBackMoves().size() == 1,
                     "after=" + guide.layableAfterTakingBack() + " back=" + guide.takeBackMoves().size());
-            table().recipeBook.layOut(false);
+            table().guide.layOut(false);
         });
         step(8, () -> shot("tb1_taking_back"));
         step(70, () -> {
@@ -1686,7 +1686,7 @@ public final class Showcase {
         });
         step(10, () -> {
             selectRecipe("chest");
-            table().recipeBook.layOut(false);
+            table().guide.layOut(false);
         });
         step(100, () -> {
             server(p -> {
@@ -1709,7 +1709,7 @@ public final class Showcase {
         });
         step(10, () -> {
             selectRecipe("stick");
-            table().recipeBook.layOut(true);
+            table().guide.layOut(true);
         });
         step(100, () -> {
             server(p -> check("2.1 Shift sticks: the cobblestone back, all twenty planks laid in two cells", onTableCount(p, Items.COBBLESTONE) == 0
@@ -1730,9 +1730,9 @@ public final class Showcase {
         });
         step(10, () -> {
             selectRecipe("lapis_block");
-            check("2.1 no room: the ingot cannot go back", table().recipeBook.guide.stuck() == 1 && table().recipeBook.guide.takeBackMoves().isEmpty(),
-                    "stuck=" + table().recipeBook.guide.stuck());
-            table().recipeBook.layOut(false);
+            check("2.1 no room: the ingot cannot go back", table().guide.stuck() == 1 && table().guide.takeBackMoves().isEmpty(),
+                    "stuck=" + table().guide.stuck());
+            table().guide.layOut(false);
         });
         step(90, () -> server(p -> check("2.1 no room: the ingot stays on the table, the lapis round it, nothing lost",
                 onTableCount(p, Items.IRON_INGOT) == 1 && onTableCount(p, Items.LAPIS_LAZULI) == 8 && heldEverywhere(p, Items.LAPIS_LAZULI) == 9,
@@ -3104,19 +3104,19 @@ public final class Showcase {
         }, () -> {
             enterAt(new Vec3(0.7, -60, 5.6), 172f, TABLE, new Vec3(0.5, 1, 0.8), Direction.UP).run();
             step(95, () -> {
-                var entry = table().recipeBook.guide.entries.stream().filter(e -> e.holder.id().getPath().equals("torch")).findFirst();
-                entry.ifPresent(table().recipeBook::show);
+                var entry = table().guide.entries.stream().filter(e -> e.holder.id().getPath().equals("torch")).findFirst();
+                entry.ifPresent(table().recipeBook::select);
             });
         }, 100, p -> { TableStore.Table t = TableStore.get(p.serverLevel()).get(TABLE); return t == null ? "[]" : describeAll(t.items); }, List.of(
                 new QuickCase("the stick goes to the diagram's stick cell", p -> {}, 12, p -> {
-                    var guide = table().recipeBook.guide;
+                    var guide = table().guide;
                     for (int l = 0; l < 9; l++)
                         if (!guide.grid[l].isEmpty() && guide.grid[l].test(new ItemStack(Items.STICK)))
                             return holds(tableCell(p, tableWorld(l)), Items.STICK, 5) && inv(p, 12).isEmpty();
                     return false;
                 }, 16),
                 new QuickCase("the coal to the diagram's coal cell", p -> {}, 13, p -> {
-                    var guide = table().recipeBook.guide;
+                    var guide = table().guide;
                     for (int l = 0; l < 9; l++)
                         if (!guide.grid[l].isEmpty() && guide.grid[l].test(new ItemStack(Items.COAL)))
                             return holds(tableCell(p, tableWorld(l)), Items.COAL, 4) && inv(p, 13).isEmpty();
@@ -3565,7 +3565,7 @@ public final class Showcase {
             step(10, () -> {
                 check("no recipe viewer: no field guide", guide() == null || !guide().present(), "absent");
                 check("no recipe viewer: the table's reference is still there", Scene.station instanceof TableStation t
-                        && t.recipeBook.guide.entries.size() > 100, "entries");
+                        && t.guide.entries.size() > 100, "entries");
             });
             step(3, () -> finish(Minecraft.getInstance()));
             return;
@@ -3617,7 +3617,7 @@ public final class Showcase {
             });
             step(3, () -> guideButton("show_table"));
             step(12, () -> {
-                var chosen = table().recipeBook.guide.selected;
+                var chosen = table().guide.selected;
                 check("guide shows the torch on the tabletop", chosen != null && chosen.holder.id().getPath().equals("torch"),
                         "selected=" + (chosen == null ? "-" : chosen.holder.id()));
                 server(p -> check("looking a recipe up moves nothing", TableStore.get(p.serverLevel()).get(TABLE) == null
@@ -4160,13 +4160,13 @@ public final class Showcase {
         step(3, () -> screenClick(0));
         step(15, () -> {
             shot("0d3_editor_recipe_ghosts");
-            double[] at = table().recipeBook.layPoint();
+            double[] at = table().recipeBook.actionPoint();
             pointGui(at[0], at[1]);
             screenClick(0);
         });
         step(60, () -> {
             check("editor recipe layout reaches adjusted cells", !table().result.isEmpty() && table().result.is(Items.WOODEN_PICKAXE)
-                    && table().recipeBook.guide.missingCount == 0, "result=" + table().result);
+                    && table().guide.missingCount == 0, "result=" + table().result);
             shot("0d4_editor_laid_out");
         });
         for (int[] rc : new int[][]{{0,0},{0,1},{0,2},{1,1},{2,1}}) {
@@ -4260,7 +4260,7 @@ public final class Showcase {
         step(4, () -> pointRecipe("diamond_pickaxe"));
         step(3, () -> screenClick(0));
         step(12, () -> {
-            var guide = table().recipeBook.guide;
+            var guide = table().guide;
             check("recipe missing diamonds", guide.selected != null && guide.missingCount == 3 && !guide.selected.craftable,
                     "missing=" + guide.missingCount);
             check("recipe search movement keys", Scene.phase == Scene.Phase.ACTIVE, "phase=" + Scene.phase);
@@ -4278,16 +4278,16 @@ public final class Showcase {
         step(4, () -> shot("0r2_missing_diamonds"));
         step(2, () -> recipeControl(12, 52)); // only craftable recipes
         //? if >=1.21 {
-        step(4, () -> check("recipe availability filter", table().recipeBook.recipePoint(ResourceLocation.withDefaultNamespace("diamond_pickaxe")) == null,
+        step(4, () -> check("recipe availability filter", table().recipePoint(ResourceLocation.withDefaultNamespace("diamond_pickaxe")) == null,
         //?} else if <1.21 {
-        /*step(4, () -> check("recipe availability filter", table().recipeBook.recipePoint(new ResourceLocation("diamond_pickaxe")) == null,
+        /*step(4, () -> check("recipe availability filter", table().recipePoint(new ResourceLocation("diamond_pickaxe")) == null,
         *///?}
                 "diamond pickaxe hidden"));
         step(2, () -> recipeSearch("wooden_pickaxe"));
         step(4, () -> pointRecipe("wooden_pickaxe"));
         step(3, () -> screenClick(0));
         step(10, () -> {
-            var guide = table().recipeBook.guide;
+            var guide = table().guide;
             check("recipe available planks and sticks", guide.selected != null && guide.selected.craftable && guide.missingCount == 0,
                     "missing=" + guide.missingCount);
             pointAside();
@@ -4300,7 +4300,7 @@ public final class Showcase {
         step(2, () -> point(0, 0));
         step(8, () -> clickCell(0, 0, 1));
         step(8, () -> {
-            check("recipe placed ingredient", table().recipeBook.guide.placed[0], "first plank accepted");
+            check("recipe placed ingredient", table().guide.placed[0], "first plank accepted");
             shot("0r4_partial_recipe");
         });
         step(2, () -> inventoryClick(36, 0));
@@ -4308,7 +4308,7 @@ public final class Showcase {
         step(2, () -> point(0, 1));
         step(8, () -> clickCell(0, 1, 1));
         step(8, () -> {
-            check("recipe wrong ingredient", table().recipeBook.guide.wrong(1), "cobblestone instead of planks");
+            check("recipe wrong ingredient", table().guide.wrong(1), "cobblestone instead of planks");
             shot("0r5_wrong_ingredient");
         });
         step(2, () -> inventoryClick(38, 0));
@@ -4325,7 +4325,7 @@ public final class Showcase {
         });
         step(2, () -> recipeControl(113, 12)); // fold away, keep the diagram
         step(15, () -> {
-            check("recipe folded guide retained", table().recipeBook.guide.selected != null, "selection retained");
+            check("recipe folded guide retained", table().guide.selected != null, "selection retained");
             pointAside();
             shot("0r6_folded_reference");
             var at = table().recipeBook.togglePoint();
@@ -4333,7 +4333,7 @@ public final class Showcase {
             screenClick(0);
         });
         step(15, () -> recipeControl(113, 194));
-        step(3, () -> check("recipe clear guide", table().recipeBook.guide.selected == null, "cleared"));
+        step(3, () -> check("recipe clear guide", table().guide.selected == null, "cleared"));
         tableRecipeLayoutScript();
         step(2, () -> recipeControl(113, 12));
         step(15, Showcase::pointAside);
@@ -4351,7 +4351,7 @@ public final class Showcase {
         step(3, () -> point(2, 2));
         step(6, () -> clickCell(2, 2, 0));
         step(8, () -> {
-            var guide = table().recipeBook.guide;
+            var guide = table().guide;
             check("recipe shapeless follows placement", guide.placed[8] && guide.grid[0].isEmpty() && guide.missingCount == 0,
                     "log at bottom right");
             shot("0r7_shapeless_recipe");
@@ -4366,7 +4366,7 @@ public final class Showcase {
         step(3, () -> pointRecipe("stick"));
         step(3, () -> screenClick(0));
         step(6, () -> {
-            var guide = table().recipeBook.guide;
+            var guide = table().guide;
             check("recipe narrow pattern centered", !guide.grid[1].isEmpty() && !guide.grid[4].isEmpty() && guide.grid[0].isEmpty(),
                     "one-column pattern");
         });
@@ -4374,7 +4374,7 @@ public final class Showcase {
         step(3, () -> point(1, 0));
         step(6, () -> clickCell(1, 0, 1));
         step(8, () -> {
-            var guide = table().recipeBook.guide;
+            var guide = table().guide;
             check("recipe shaped follows offset", guide.placed[3] && (!guide.grid[0].isEmpty() || !guide.grid[6].isEmpty()) && guide.grid[1].isEmpty(),
                     "pattern moved to left column");
             shot("0r8_offset_recipe");
@@ -4389,7 +4389,7 @@ public final class Showcase {
         step(3, () -> point(2, 0));
         step(6, () -> clickCell(2, 0, 1));
         step(8, () -> {
-            var guide = table().recipeBook.guide;
+            var guide = table().guide;
             check("recipe shaped follows mirror", guide.placed[6] && guide.grid[7].isEmpty() && guide.grid[4].test(new ItemStack(Items.OAK_PLANKS)),
                     "mirrored axe pattern");
             shot("0r9_mirrored_recipe");
@@ -4400,9 +4400,9 @@ public final class Showcase {
         step(4, () -> {
             BlockPos testPos = TABLE.offset(100, 0, 0);
             //? if >=1.21 {
-            var entry = table().recipeBook.guide.entries.stream().filter(e -> e.holder.id().equals(ResourceLocation.withDefaultNamespace("wooden_pickaxe"))).findFirst().orElseThrow();
+            var entry = table().guide.entries.stream().filter(e -> e.holder.id().equals(ResourceLocation.withDefaultNamespace("wooden_pickaxe"))).findFirst().orElseThrow();
             //?} else if <1.21 {
-            /*var entry = table().recipeBook.guide.entries.stream().filter(e -> e.holder.id().equals(new ResourceLocation("wooden_pickaxe"))).findFirst().orElseThrow();
+            /*var entry = table().guide.entries.stream().filter(e -> e.holder.id().equals(new ResourceLocation("wooden_pickaxe"))).findFirst().orElseThrow();
             *///?}
             Direction[] sides = {Direction.SOUTH, Direction.NORTH, Direction.EAST, Direction.WEST};
             int[] firstCells = {0, 8, 6, 2};
@@ -4450,9 +4450,9 @@ public final class Showcase {
 
     private static void pointRecipe(String id) {
         //? if >=1.21 {
-        var at = table().recipeBook.recipePoint(ResourceLocation.withDefaultNamespace(id));
+        var at = table().recipePoint(ResourceLocation.withDefaultNamespace(id));
         //?} else if <1.21 {
-        /*var at = table().recipeBook.recipePoint(new ResourceLocation(id));
+        /*var at = table().recipePoint(new ResourceLocation(id));
         *///?}
         check("recipe found " + id, at != null, "reference lookup");
         if (at != null) pointGui(at[0], at[1]);
@@ -7506,7 +7506,7 @@ public final class Showcase {
         step(4, () -> pointRecipe("wooden_pickaxe"));
         step(3, () -> screenClick(0));
         step(10, () -> {
-            double[] at = table().recipeBook.layPoint();
+            double[] at = table().recipeBook.actionPoint();
             pointGui(at[0], at[1]);
         });
         step(6, () -> {
@@ -7541,7 +7541,7 @@ public final class Showcase {
         step(4, () -> pointRecipe("diamond_pickaxe"));
         step(3, () -> screenClick(0));
         step(10, () -> {
-            double[] at = table().recipeBook.layPoint();
+            double[] at = table().recipeBook.actionPoint();
             pointGui(at[0], at[1]);
             screenClick(0);
         });
@@ -7551,8 +7551,8 @@ public final class Showcase {
             for (int i = 0; entry != null && i < 9; i++) {
                 laid += entry.items[i].isEmpty() ? 0 : 1;
             }
-            check("lay out: only the sticks go down, the diamonds stay see-through", laid == 2 && table().recipeBook.guide.missingCount == 3,
-                    "laid=" + laid + " missing=" + table().recipeBook.guide.missingCount);
+            check("lay out: only the sticks go down, the diamonds stay see-through", laid == 2 && table().guide.missingCount == 3,
+                    "laid=" + laid + " missing=" + table().guide.missingCount);
             pointAside();
             shot("y4_partial");
         });
@@ -7746,9 +7746,9 @@ public final class Showcase {
         step(4, () -> pointRecipe("torch"));
         step(3, () -> screenClick(0));
         step(6, () -> {
-            var max = table().recipeBook.guide.maxLayout();
+            var max = table().guide.maxLayout();
             check("lay out all: seven torch sets offered", max.sets() == 7 && max.current() == 0, "sets=" + max.sets() + " moves=" + max.moves().size());
-            table().recipeBook.layOut(true);
+            table().guide.layOut(true);
         });
         step(8, () -> shot("y7_lay_all_moving"));
         step(40, () -> {
@@ -7774,11 +7774,11 @@ public final class Showcase {
         step(10, () -> recipeSearch("ender_eye"));
         step(4, () -> pointRecipe("ender_eye"));
         step(3, () -> screenClick(0));
-        step(6, () -> table().recipeBook.layOut(false));
+        step(6, () -> table().guide.layOut(false));
         step(30, () -> {
-            var max = table().recipeBook.guide.maxLayout();
+            var max = table().guide.maxLayout();
             check("lay out all: one set lies, sixteen offered", max.current() == 1 && max.sets() == 16, "current=" + max.current() + " sets=" + max.sets());
-            table().recipeBook.layOut(true);
+            table().guide.layOut(true);
         });
         step(40, () -> server(p -> {
             TableStore.Table stored = TableStore.get(p.serverLevel()).get(TABLE);
@@ -7801,9 +7801,9 @@ public final class Showcase {
         step(4, () -> pointRecipe("diamond_pickaxe"));
         step(3, () -> screenClick(0));
         step(8, () -> {
-            var max = table().recipeBook.guide.maxLayout();
+            var max = table().guide.maxLayout();
             check("lay out all: no full set, nothing offered", max.moves().isEmpty() && max.current() == 0, "sets=" + max.sets());
-            table().recipeBook.layOut(true);
+            table().guide.layOut(true);
         });
         step(20, () -> server(p -> check("lay out all: nothing laid without a full set", TableStore.get(p.serverLevel()).get(TABLE) == null
                 && heldEverywhere(p, Items.STICK) == 10, "sticks=" + heldEverywhere(p, Items.STICK))));

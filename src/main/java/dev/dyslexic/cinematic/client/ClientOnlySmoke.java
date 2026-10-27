@@ -174,7 +174,7 @@ public final class ClientOnlySmoke {
                 TableStation table = Scene.station(TableStation.class);
                 // the hands are still pressing the last craft together: laying out waits, as the button does
                 if (table.busy()) return;
-                var guide = table.recipeBook.guide;
+                var guide = table.guide;
                 //? if <1.21 {
                 /*// The normal UI indexes lazily when the recipe book opens; this smoke test selects directly.
                 guide.tick();
@@ -187,7 +187,7 @@ public final class ClientOnlySmoke {
                     if (ticks > 40) fail("Shift + Lay out offered " + guide.maxLayout().sets() + " stick sets instead of 2");
                     return;
                 }
-                table.recipeBook.layOut(true);
+                table.guide.layOut(true);
                 if (!table.busy()) {
                     fail("Shift + Lay out did not start laying");
                     return;

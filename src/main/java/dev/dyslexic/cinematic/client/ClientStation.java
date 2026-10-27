@@ -1,6 +1,7 @@
 package dev.dyslexic.cinematic.client;
 
 import com.mojang.blaze3d.vertex.PoseStack;
+import dev.dyslexic.cinematic.api.client.RecipePanel;
 import dev.dyslexic.cinematic.station.StationKind;
 import java.util.List;
 import javax.annotation.Nullable;
@@ -336,6 +337,16 @@ public abstract class ClientStation {
 
     /** Extras over the scene (progress indicators...). */
     public void renderScreen(GuiGraphics graphics, Font font, float alpha) {}
+
+    /**
+     * The recipe reference this station shows, if any: the scene screen sends it the mouse and keys. The station still
+     * ticks and draws it itself (from {@link #tick} and {@link #renderScreen}), and draws what choosing a recipe means
+     * in the world.
+     */
+    @Nullable
+    public RecipePanel recipePanel() {
+        return null;
+    }
 
     //? if !forge {
     /** The results competing for the station's input (Polymorph), for the stations that offer a choice. */
