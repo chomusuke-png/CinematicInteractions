@@ -14,7 +14,12 @@ base.archivesName = prop("mod.archive")
 java.toolchain.languageVersion = JavaLanguageVersion.of(javaVersion)
 
 legacyForge {
-    version = "${sc.current.version}-${prop("deps.forge")}"
+    enable {
+        forgeVersion = "${sc.current.version}-${prop("deps.forge")}"
+        // On CI MDG skips recompiling Minecraft, which names every constructor parameter "o" and breaks our
+        // anonymous RenderType/Button subclasses ("variable o is already defined"): always recompile.
+        isDisableRecompilation = false
+    }
     // this loader's access transformer is outside the default src/main/resources
     accessTransformers.from(rootProject.file("src/forge/resources/META-INF/accesstransformer.cfg"))
 
