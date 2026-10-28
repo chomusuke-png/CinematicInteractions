@@ -327,7 +327,18 @@ public final class GrindstoneStation extends MenuStation<GrindstoneMenu> impleme
     static double stroke(double t) {
         double s = Anim.window(t, CONTACT, LET_GO);
         double fade = Anim.smoother(s * 8) * Anim.smoother((1 - s) * 8);
-        return 0.075 * Math.sin(Math.PI * (t - CONTACT) / STROKE) * fade;
+        return reach(t) * Math.sin(phase(t)) * fade;
+    }
+
+    /** How far through its strokes the blade is, in half turns of a sine: by turns a little quicker and slower, never a metronome. */
+    static double phase(double t) {
+        double u = t - CONTACT;
+        return Math.PI * (u + 0.035 * Math.sin(u * 5.3)) / STROKE;
+    }
+
+    /** Half a stroke's length: a little longer and shorter by turns, then short finishing passes once the enchantment is off. */
+    static double reach(double t) {
+        return 0.075 * (1 + 0.15 * Math.sin((t - CONTACT) * 1.9)) * (1 - 0.4 * Anim.inOutCubic(Anim.window(t, CLEAN_AT, LET_GO)));
     }
 
     /** Unit vector from the handle to the tip of item {@code k} (0 right hand, 1 left) while it is ground. */
@@ -361,7 +372,7 @@ public final class GrindstoneStation extends MenuStation<GrindstoneMenu> impleme
         double lift = Anim.inOutCubic(Anim.window(t, 0.28, CONTACT));
         Vec3 at = Anim.lerp(lying, grinding, lift).add(0, 0.09 * Anim.hump(lift), 0);
         // little pushes onto the stone with every stroke
-        return at.add(0, -0.008 * Math.abs(Math.sin(Math.PI * (t - CONTACT) / STROKE)) * Anim.window(t, CONTACT, CONTACT + 0.1), 0);
+        return at.add(0, -0.008 * Math.abs(Math.sin(phase(t))) * Anim.window(t, CONTACT, CONTACT + 0.1), 0);
     }
 
     /** From lying straight on the wheel to the slant it is ground at. */
@@ -427,7 +438,7 @@ public final class GrindstoneStation extends MenuStation<GrindstoneMenu> impleme
             left = Anim.lerp(rest(false), handle(1, heldPos(1, Math.min(t, CLEAN_AT))), hold);
         } else {
             // the other hand braces the frame, bearing down with every stroke
-            double bear = Math.abs(Math.sin(Math.PI * (t - CONTACT) / STROKE)) * Anim.window(t, CONTACT, CONTACT + 0.1) * (1 - Anim.window(t, LET_GO - 0.1, LET_GO));
+            double bear = Math.abs(Math.sin(phase(t))) * Anim.window(t, CONTACT, CONTACT + 0.1) * (1 - Anim.window(t, LET_GO - 0.1, LET_GO));
             left = rest(false).add(0, -0.008 * bear, 0).add(side().scale(-0.02 * Anim.window(t, 0.1, 0.4)));
         }
         return new Vec3[]{grip, left};
@@ -445,14 +456,6 @@ public final class GrindstoneStation extends MenuStation<GrindstoneMenu> impleme
     // ---- per tick / frame ----------------------------------------------------------------------------
 
     @Override
-    public void tick() {
-        double t = moveTime();
-        if (t >= CONTACT && t < LET_GO && Minecraft.getInstance().player.tickCount % 9 == 0) {
-            Scene.sound(SoundEvents.GRINDSTONE_USE, 0.25f, 1.25f + Fx.RANDOM.nextFloat() * 0.2f);
-        }
-    }
-
-    @Override
     void frame() {
         super.frame();
         double t = moveTime();
@@ -468,17 +471,28 @@ public final class GrindstoneStation extends MenuStation<GrindstoneMenu> impleme
 
     /**
      * Grinding, {@code t} seconds in: sparks dragged off where the blades bite and fountaining up over the far side of the
-     * wheel, the enchantment flaking off and, once it is gone, a last burst of it.
+     * wheel, the enchantment flaking off and, once it is gone, a last burst of it; the stone rasps on every stroke.
      */
     static void grindFx(Vec3 wheel, Direction side, boolean two, boolean stripping, double t, double dt) {
-        if (t < CONTACT || t >= LET_GO) {
+        if (t < CONTACT || t >= LET_GO || dt <= 0) {
             return;
         }
-        int count = (int) Math.round(dt * 160 + Fx.RANDOM.nextDouble());
+        // sparks thicken while the blade sweeps across and thin out as it turns back, and are dragged along with it
+        Vec3 sweep = heldPos(wheel, side, 0, t).subtract(heldPos(wheel, side, 0, t - dt)).scale(1 / dt);
+        double pace = Math.min(1.5, sweep.length() / 0.55);
+        int count = (int) Math.round(dt * 160 * (0.2 + 1.25 * pace) + Fx.RANDOM.nextDouble());
         Vec3 lean = Vec3.atLowerCornerOf(side.getNormal()).scale(-0.55);
-        Fx.fountain(bite(wheel, side, 0, t), lean, rightOf(side), count, 2.2);
+        Vec3 drag = new Vec3(sweep.x, 0, sweep.z).scale(0.7);
+        Fx.fountain(bite(wheel, side, 0, t), lean.add(drag), rightOf(side), count, 2.2);
         if (two && t < CLEAN_AT) {
-            Fx.fountain(bite(wheel, side, 1, t), lean, rightOf(side), count, 2.2);
+            // the second blade is drawn the other way
+            Fx.fountain(bite(wheel, side, 1, t), lean.subtract(drag), rightOf(side), count, 2.2);
+        }
+        // the rasp peaks mid-stroke, a shade higher drawn out than back, quieter on the finishing passes
+        int stroke = (int) Math.floor(phase(t) / Math.PI);
+        if (stroke != (int) Math.floor(phase(t - dt) / Math.PI)) {
+            float pitch = ((stroke & 1) == 0 ? 1.3f : 1.18f) + Fx.RANDOM.nextFloat() * 0.08f;
+            sound(bite(wheel, side, 0, t), SoundEvents.GRINDSTONE_USE, (float) (0.25 * reach(t) / 0.075), pitch);
         }
         if (stripping && t < CLEAN_AT + 0.1) {
             Vec3 steel = heldPos(wheel, side, 0, t).add(blade(side, 0).scale(0.04)).add(0, 0.02, 0);
@@ -684,7 +698,7 @@ public final class GrindstoneStation extends MenuStation<GrindstoneMenu> impleme
         drawLifted(pose, buffers, camera.getPosition(), entry.side, entry.moveResult, at, t, (float) (ITEM_SIZE * (1 - 0.8 * away)), light);
     }
 
-    /** Someone else grinds here: the wheel spins up and down, sparks fly, the stone hums as the blade is drawn over it. */
+    /** Someone else grinds here: the wheel spins up and down, sparks fly, the stone rasps as the blade is drawn over it. */
     static void onlookerFx(BlockPos pos, BlockState state, ClientMenus.Entry entry, double t, double dt) {
         boolean driven = t >= 0 && t < LET_GO + 0.1;
         entry.spin = driven ? Anim.approach(entry.spin, 1, 5, dt) : Anim.approach(entry.spin, 0, 1.3, dt);
@@ -695,10 +709,6 @@ public final class GrindstoneStation extends MenuStation<GrindstoneMenu> impleme
         Vec3 wheel = wheelCenter(pos, state);
         ItemStack first = entry.moved(0), second = entry.moved(1);
         grindFx(wheel, entry.side, !second.isEmpty(), removesEnchantments(first) || removesEnchantments(second), t, dt);
-        // the hum of the stone, as often as the scene's
-        if (t >= CONTACT && t < LET_GO && Math.floor((t - CONTACT) / 0.45) != Math.floor((t - dt - CONTACT) / 0.45)) {
-            sound(wheel, SoundEvents.GRINDSTONE_USE, 0.25f, 1.25f + Fx.RANDOM.nextFloat() * 0.2f);
-        }
     }
 
     /** How far the arms holding a blade to the wheel sway sideways with its strokes, as others see it, at time {@code t} of grinding. */
