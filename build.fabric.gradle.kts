@@ -37,6 +37,7 @@ dependencies {
     // Optional integrations, never bundled (see stonecutter.properties.toml).
     for (dependency in list("deps.compile_only")) compileOnly(dependency)
     for (dependency in list("deps.mod_compile_only")) modCompileOnly(dependency)
+    if (hasProperty("withMouseTweaks")) modRuntimeOnly(prop("deps.mouse_tweaks"))
     // Local test mods for a run (Iris, Sodium, JEI ...): nothing in this folder goes into the release JAR.
     if (hasProperty("withTestMods")) {
         modRuntimeOnly(fileTree(rootProject.file("test-mods/${sc.current.project}/${findProperty("withTestMods")}")) { include("*.jar") })

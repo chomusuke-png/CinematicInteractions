@@ -132,6 +132,8 @@ val testMods = mapOf(
     "withAmendments" to listOf("local:amendments-1.20:2.2.6", "local:moonlight-1.20:2.16.37-forge"),
     "withEasyMods" to listOf("local:EasyMagic:v8.0.1-1.20.1-Forge", "local:EasyAnvils:v8.0.2-1.20.1-Forge", "local:PuzzlesLib:v8.1.36-1.20.1-Forge"),
     "withPolymorph" to listOf("local:polymorph-forge:0.49.11+1.20.1"),
+    // Mouse Tweaks 2.25.1: its drag and wheel tweaks in the scene's inventory drawer.
+    "withMouseTweaks" to listOf("maven.modrinth:mouse-tweaks:7JVXOe3K"),
     // Quark 4.0-462 with Zeta 1.0-31: its wood crafting tables. With Every Compat 2.9.28 and Moonlight 2.16.37 too, and
     // Ecologics 2.2.7 for woods of another mod: Every Compat makes Quark's tables of those.
     "withQuark" to listOf("maven.modrinth:quark:DijQLauD", "maven.modrinth:zeta:mSER3jBI"),

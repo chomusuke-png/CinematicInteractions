@@ -20,6 +20,8 @@ deps.parchment_minecraft = "1.21.1"
 deps.parchment = "2024.11.17"
 # Optional integrations, never bundled: Inventory Particles / Interactions, JEI 19.57.0.451 (Southware's pack), Polymorph.
 deps.compile_only = "maven.modrinth:inventory-particles:tIeIGFCs maven.modrinth:inventory-interactions:U3SO7tDA maven.modrinth:jei:RI8WCow6 maven.modrinth:polymorph:Ac1c8Jlj"
+# Mouse Tweaks 2.26.1 for a test run (-PwithMouseTweaks).
+deps.mouse_tweaks = "maven.modrinth:mouse-tweaks:9I21YYxf"
 
 [forge."1.20.1"]
 mod.java = 17
@@ -45,6 +47,8 @@ deps.modmenu = "11.0.3"
 deps.compile_only = "maven.modrinth:jei:RI8WCow6 maven.modrinth:inventory-particles:tIeIGFCs maven.modrinth:inventory-interactions:U3SO7tDA"
 # Polymorph 1.1.0 for Fabric 1.21.1.
 deps.mod_compile_only = "maven.modrinth:polymorph:Ng5Y6KVo"
+# Mouse Tweaks 2.26 for a test run (-PwithMouseTweaks).
+deps.mouse_tweaks = "maven.modrinth:mouse-tweaks:ylmBQ38A"
 mixins.exclude = "ChunkMapMixin"
 
 [fabric."1.20.1"]
@@ -57,4 +61,6 @@ deps.modmenu = "7.2.2"
 deps.compile_only = ""
 # JEI 15.74.0.230, Inventory Particles 3.2.0, Inventory Interactions 2.2.0 and Polymorph 0.49.11, Fabric builds.
 deps.mod_compile_only = "maven.modrinth:jei:NKdcms4C maven.modrinth:inventory-particles:JDwRa5Wi maven.modrinth:inventory-interactions:t3ypx0EB maven.modrinth:polymorph:YGcahGOD"
+# Mouse Tweaks 2.26 for a test run (-PwithMouseTweaks).
+deps.mouse_tweaks = "maven.modrinth:mouse-tweaks:mjuG4AYd"
 mixins.exclude = "PlayerChunkSenderMixin"

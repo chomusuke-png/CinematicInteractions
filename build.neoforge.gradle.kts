@@ -99,6 +99,7 @@ repositories {
 dependencies {
     // Optional integrations: these jars are never bundled or required to run Cinematic Interactions.
     for (dependency in prop("deps.compile_only").split(" ").filter { it.isNotBlank() }) compileOnly(dependency)
+    if (hasProperty("withMouseTweaks")) runtimeOnly(prop("deps.mouse_tweaks"))
 }
 
 val generateModMetadata = tasks.register<ProcessResources>("generateModMetadata") {
