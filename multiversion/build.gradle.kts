@@ -34,6 +34,7 @@ dependencies {
     if (hasProperty("withPunchy")) modRuntimeOnly(dep("punchy"))
     if (hasProperty("withPolymorph")) modRuntimeOnly(dep("polymorph"))
     if (hasProperty("withJei")) modRuntimeOnly(dep("jei"))
+    if (hasProperty("withMouseTweaks")) modRuntimeOnly(dep("mouse_tweaks"))
     if (hasProperty("withInventoryParticles") || hasProperty("withInventoryEffects")) {
         modRuntimeOnly(dep("inventory_particles"))
         modRuntimeOnly(dep("mossylib"))
