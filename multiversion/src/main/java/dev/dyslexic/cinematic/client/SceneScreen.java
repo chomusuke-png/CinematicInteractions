@@ -7,7 +7,7 @@ import javax.annotation.Nullable;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.EditBox;
-import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
@@ -15,7 +15,9 @@ import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.util.Mth;
+import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ContainerInput;
+import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import com.mojang.blaze3d.platform.InputConstants;
 
@@ -23,8 +25,10 @@ import com.mojang.blaze3d.platform.InputConstants;
  * An invisible screen over the scene while the hands are at work. It frees the cursor and draws a glass drawer
  * with the inventory at the top of the frame: the hotbar always, the rest when the cursor goes up there.
  * Clicks elsewhere go to the station. A station may also ask for a line of text (the anvil's new name).
+ * It is a container screen over the open menu, so the drawer gets vanilla's inventory shortcuts (double-click,
+ * drag-to-spread, F, middle-click) and mods that work on container screens (Mouse Tweaks) find its slots.
  */
-public final class SceneScreen extends Screen {
+public final class SceneScreen extends AbstractContainerScreen<AbstractContainerMenu> {
     private static final int SLOT = 18;
     private static final int PAD = 5;
     private static final int ROW_GAP = 4;
@@ -32,11 +36,14 @@ public final class SceneScreen extends Screen {
 
     private static final int FIELD_W = 170;
 
-    private final InventoryEffects inventoryEffects = new InventoryEffects();
-    final FieldGuide guide = new FieldGuide();
+    private final InventoryEffects inventoryEffects;
+    final FieldGuide guide;
     private double expand;
     private float scale = 1f;
     private int panelX, panelY, panelW, panelH;
+    /** A click on a drawer slot went to vanilla's handling, which then needs its drag and release too. */
+    private boolean drawerGesture;
+    private int drawerButton;
 
     @Nullable
     private EditBox field;
@@ -44,7 +51,19 @@ public final class SceneScreen extends Screen {
     private Consumer<String> commit;
 
     public SceneScreen() {
-        super(Component.translatable("cinematic.scene"));
+        this(null);
+    }
+
+    /** Over the menu open now, carrying on from {@code before} when the menu changed under it. */
+    private SceneScreen(@Nullable SceneScreen before) {
+        super(Minecraft.getInstance().player.containerMenu, Minecraft.getInstance().player.getInventory(), Component.translatable("cinematic.scene"));
+        inventoryEffects = before != null ? before.inventoryEffects : new InventoryEffects();
+        guide = before != null ? before.guide : new FieldGuide();
+        if (before != null) {
+            expand = before.expand;
+            field = before.field;
+            commit = before.commit;
+        }
     }
 
     @Override protected void init() {
@@ -53,8 +72,12 @@ public final class SceneScreen extends Screen {
     }
 
     @Override
-    public void tick() {
-        super.tick();
+    protected void containerTick() {
+        // the menu a container screen works on is fixed; a station that opens its menu later gets a screen over that one
+        if (minecraft.player != null && minecraft.player.containerMenu != menu) {
+            minecraft.gui.setScreen(new SceneScreen(this));
+            return;
+        }
         inventoryEffects.tick();
         guide.tick();
     }
@@ -63,6 +86,44 @@ public final class SceneScreen extends Screen {
     public boolean isPauseScreen() {
         return false;
     }
+
+    @Override
+    public boolean isInGameUi() {
+        return false;
+    }
+
+    /** The menu stays open under the scene: unlike a window, closing this screen never closes it. */
+    @Override
+    public void removed() {}
+
+    /** Clicks off the drawer go to the station, never drop what is carried. */
+    @Override
+    protected boolean hasClickedOutside(double mx, double my, int left, int top) {
+        return false;
+    }
+
+    /** Vanilla finds a slot by its place in its own window; here the inventory's slots sit in the drawer, the station's nowhere. */
+    @Override
+    protected boolean isHovering(int x, int y, int w, int h, double mx, double my) {
+        Slot slot = drawerSlotAt(mx, my);
+        return slot != null && slot.x == x && slot.y == y;
+    }
+
+    @Nullable
+    private Slot drawerSlotAt(double mx, double my) {
+        LocalPlayer player = minecraft.player;
+        if (player == null || !working() || FreeLook.looking() || !Scene.station.showsInventory() || !overPanel(mx, my)) {
+            return null;
+        }
+        int drawer = slotAt(mx, my);
+        int i = drawer < 0 ? -1 : menuSlot(player, drawer);
+        return i >= 0 && i < menu.slots.size() ? menu.slots.get(i) : null;
+    }
+
+    //? if <26.1 {
+    /*@Override
+    protected void renderBg(GuiGraphicsExtractor graphics, float partialTick, int mouseX, int mouseY) {}
+    *///?}
 
     @Override
     public void extractBackground(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
@@ -232,6 +293,8 @@ public final class SceneScreen extends Screen {
         layout();
         float alpha = (working() ? (float) Anim.smoother(Scene.time / 0.4) : presence()) * (1 - look);
         int hovered = over ? slotAt(mouseX, mouseY) : -1;
+        // read by vanilla's keys (1-9, F, Q, pick) and by mods working on container screens
+        hoveredSlot = drawerSlotAt(mouseX, mouseY);
         inventoryEffects.beginFrame(working() && !FreeLook.looking() && field == null
                 && !(editor() != null && editor().visible()));
 
@@ -326,9 +389,31 @@ public final class SceneScreen extends Screen {
             if (cy >= Math.max(0, panelY) && cy < panelY + panelH) {
                 inventoryEffects.drawer(inventoryIndex(menuSlot), stack, cx, cy, menuSlot == hovered);
             }
-            g.item(stack, x + 1, y + 1);
-            g.itemDecorations(font, stack, x + 1, y + 1);
+            ItemStack shown = spreadPreview(player, menuSlot, stack);
+            g.item(shown, x + 1, y + 1);
+            g.itemDecorations(font, shown, x + 1, y + 1);
         }
+    }
+
+    /** While a drag spreads the carried stack, a slot it passed over shows the share it will get, as vanilla's slots do. */
+    private ItemStack spreadPreview(LocalPlayer player, int drawerSlot, ItemStack stack) {
+        ItemStack carried = menu.getCarried();
+        if (!isQuickCrafting || quickCraftSlots.size() < 2 || carried.isEmpty()) {
+            return stack;
+        }
+        int i = menuSlot(player, drawerSlot);
+        Slot slot = i >= 0 && i < menu.slots.size() ? menu.slots.get(i) : null;
+        if (slot == null || !quickCraftSlots.contains(slot) || !AbstractContainerMenu.canItemQuickReplace(slot, carried, true) || !menu.canDragTo(slot)) {
+            return stack;
+        }
+        int max = Math.min(carried.getMaxStackSize(), slot.getMaxStackSize(carried));
+        // the button that began the drag is vanilla's spread kind: 0 evenly, 1 one each, 2 a full stack each (creative)
+        //? if >=26.1 {
+        int share = AbstractContainerMenu.getQuickCraftPlaceCount(quickCraftSlots.size(), drawerButton, carried);
+        //?} else {
+        /*int share = AbstractContainerMenu.getQuickCraftPlaceCount(quickCraftSlots, drawerButton, carried);
+        *///?}
+        return carried.copyWithCount(Math.min(max, stack.getCount() + share));
     }
 
     private void drawHints(GuiGraphicsExtractor g, Component hint, float alpha) {
@@ -436,7 +521,7 @@ public final class SceneScreen extends Screen {
 
     @Override
     public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
-        return mouseClicked(event.x(), event.y(), logicalButton(event.buttonInfo().button()));
+        return mouseClicked(event, doubleClick, event.x(), event.y(), logicalButton(event.buttonInfo().button()));
     }
 
     @Override
@@ -446,11 +531,18 @@ public final class SceneScreen extends Screen {
 
     @Override
     public boolean mouseDragged(MouseButtonEvent event, double dx, double dy) {
+        if (drawerGesture) {
+            return super.mouseDragged(event, dx, dy);
+        }
         return mouseDragged(event.x(), event.y(), logicalButton(event.buttonInfo().button()), dx, dy);
     }
 
     @Override
     public boolean mouseReleased(MouseButtonEvent event) {
+        if (drawerGesture) {
+            drawerGesture = false;
+            super.mouseReleased(event);
+        }
         return mouseReleased(event.x(), event.y(), logicalButton(event.buttonInfo().button()));
     }
 
@@ -471,10 +563,19 @@ public final class SceneScreen extends Screen {
         return button == 0 ? InputConstants.MOUSE_BUTTON_LEFT : button == 1 ? InputConstants.MOUSE_BUTTON_RIGHT : InputConstants.MOUSE_BUTTON_MIDDLE;
     }
 
-    private boolean mouseClicked(double mx, double my, int button) {
+    private boolean mouseClicked(MouseButtonEvent event, boolean doubleClick, double mx, double my, int button) {
         Minecraft mc = Minecraft.getInstance();
         LocalPlayer player = mc.player;
-        if (player == null || mc.gameMode == null || (button != 0 && button != 1) || !working() || FreeLook.looking()) {
+        if (player == null || mc.gameMode == null || !working() || FreeLook.looking()) {
+            return true;
+        }
+        if (button != 0 && button != 1) {
+            // the middle button only means something on a drawer slot (pick a stack in creative)
+            if (drawerSlotAt(mx, my) != null) {
+                drawerGesture = true;
+                drawerButton = 2;
+                super.mouseClicked(event, doubleClick);
+            }
             return true;
         }
         if (editor() != null && editor().click(mx, my, button)) return true;
@@ -502,8 +603,10 @@ public final class SceneScreen extends Screen {
                         || Scene.station.kind() == dev.dyslexic.cinematic.station.StationKind.CHISELED_BOOKSHELF)) {
                     Scene.station.quickMove(inventoryIndex(slot), target);
                 } else {
-                    mc.gameMode.handleContainerInput(player.containerMenu.containerId, target, button,
-                            mc.hasShiftDown() ? ContainerInput.QUICK_MOVE : ContainerInput.PICKUP, player);
+                    // vanilla's own handling: double-click to gather, drag to spread, its shift-click
+                    drawerGesture = true;
+                    drawerButton = button;
+                    super.mouseClicked(event, doubleClick);
                 }
             }
             return true;
@@ -530,7 +633,12 @@ public final class SceneScreen extends Screen {
         if (working() && editor() != null && editor().scroll(mx, my, scrollY)) return true;
         if (working() && guideShown() && guide.scroll(mx, my, scrollY)) return true;
         if (working() && Scene.station.recipePanel() != null && Scene.station.recipePanel().scroll(mx, my, scrollY)) return true;
-        if (working() && !(Scene.station.showsInventory() && overPanel(mx, my))) {
+        if (working() && Scene.station.showsInventory() && overPanel(mx, my)) {
+            // over the drawer: vanilla's scrolling through a bundle
+            super.mouseScrolled(mx, my, scrollX, scrollY);
+            return true;
+        }
+        if (working()) {
             Scene.station.scroll(scrollY);
         }
         return true;
@@ -626,24 +734,13 @@ public final class SceneScreen extends Screen {
             Scene.leave();
             return true;
         }
-        if (player != null && mc.gameMode != null) {
-            double[] mouse = Picking.mouseGui();
-            int slot = Scene.station.showsInventory() && overPanel(mouse[0], mouse[1]) ? menuSlot(player, slotAt(mouse[0], mouse[1])) : -1;
-            if (slot >= 0) {
-                for (int i = 0; i < 9; i++) {
-                    if (options.keyHotbarSlots[i].matches(new net.minecraft.client.input.KeyEvent(key, scanCode, 0))) {
-                        inventoryEffects.action(ContainerInput.SWAP);
-                        mc.gameMode.handleContainerInput(player.containerMenu.containerId, slot, i, ContainerInput.SWAP, player);
-                        return true;
-                    }
-                }
-                if (options.keyDrop.matches(new net.minecraft.client.input.KeyEvent(key, scanCode, 0))) {
-                    inventoryEffects.action(ContainerInput.THROW);
-                    mc.gameMode.handleContainerInput(player.containerMenu.containerId, slot, net.minecraft.client.Minecraft.getInstance().hasControlDown() ? 1 : 0,
-                            ContainerInput.THROW, player);
-                    return true;
-                }
-            }
+        // over a drawer slot vanilla's keys work on it: 1-9 and F swap, Q drops, pick clones in creative
+        if (hoveredSlot != null) {
+            var event = new net.minecraft.client.input.KeyEvent(key, scanCode, 0);
+            boolean swap = options.keySwapOffhand.matches(event);
+            for (int i = 0; i < 9; i++) swap |= options.keyHotbarSlots[i].matches(event);
+            if (swap) inventoryEffects.action(ContainerInput.SWAP);
+            else if (options.keyDrop.matches(event)) inventoryEffects.action(ContainerInput.THROW);
         }
         return super.keyPressed(new net.minecraft.client.input.KeyEvent(key, scanCode, modifiers));
     }
