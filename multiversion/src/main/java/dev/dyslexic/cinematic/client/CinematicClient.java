@@ -107,7 +107,8 @@ public final class CinematicClient implements ClientModInitializer {
         var player = Minecraft.getInstance().player;
         if (next instanceof MenuAccess<?> window && Scene.station.kind().usesMenu() && player != null && window.getMenu() == player.containerMenu) return true;
         if (next instanceof InventoryScreen) return true;
-        if (Scene.phase == Scene.Phase.ACTIVE && next != null && !next.isPauseScreen()) Scene.drop();
+        // a recipe viewer's page opened from the field guide holds the scene beneath it until it hands the screen back
+        if (Scene.phase == Scene.Phase.ACTIVE && next != null && !next.isPauseScreen() && !Scene.consulting) Scene.drop();
         return false;
     }
 
