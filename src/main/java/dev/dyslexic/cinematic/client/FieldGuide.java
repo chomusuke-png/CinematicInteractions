@@ -29,9 +29,9 @@ import org.lwjgl.glfw.GLFW;
  * Looking a recipe up never gives or moves an item; JEI's pages are opened over the scene, which holds still beneath.
  */
 final class FieldGuide {
-    private static final int W = 260, H = 168, COVER = 7, SPINE = 6;
+    private static final int W = 260, COVER = 7, SPINE = 6;
     private static final int PAGE_W = (W - 2 * COVER - SPINE) / 2;
-    private static final int COLS = 6, ROWS = 4, CELL = 18, PAGE_SIZE = COLS * ROWS;
+    private static final int COLS = 6, ROWS = 8, CELL = 18, PAGE_SIZE = COLS * ROWS, H = 96 + ROWS * CELL;
     private static final int GRID_Y = 42;
     private static final int TOGGLE_W = 30, TOGGLE_H = 28, CLOSE_W = 14;
 

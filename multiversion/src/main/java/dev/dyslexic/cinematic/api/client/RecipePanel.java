@@ -104,11 +104,13 @@ public final class RecipePanel {
         }
     }
 
-    private static final int WIDTH = 128, BASE_HEIGHT = 226, CELL = 27, COLS = 4, ROWS = 4;
+    private static final int WIDTH = 128, CELL = 27, COLS = 4, ROWS = 7;
+    // everything under the grid was laid out for 4 rows and moves down by the rows added since
+    private static final int BELOW = (ROWS - 4) * CELL, BASE_HEIGHT = 226 + BELOW;
     /** The action button under the chosen recipe. */
-    private static final int BASE_ACTION_Y = 205, ACTION_H = 15;
+    private static final int BASE_ACTION_Y = 205 + BELOW, ACTION_H = 15;
     /** The chosen entry's materials, under its name: rows of icons. */
-    private static final int MATERIALS_Y = 202, MATERIAL = 18, MATERIAL_COLS = 6;
+    private static final int MATERIALS_Y = 202 + BELOW, MATERIAL = 18, MATERIAL_COLS = 6;
     private static final int GRID_X = 10, GRID_Y = 61, PAGE_SIZE = COLS * ROWS;
     private static final ItemStack BOOK = new ItemStack(Items.BOOK);
     private final Source source;
@@ -183,7 +185,7 @@ public final class RecipePanel {
         var window = Minecraft.getInstance().getWindow();
         int width = window.getGuiScaledWidth(), height = window.getGuiScaledHeight();
         // Keep the reference outside the expanded inventory and the station at narrow GUI sizes too.
-        scale = Math.min(1f, Math.min(height / 300f, width / 530f));
+        scale = Math.min(1f, Math.min(height / (300f + BELOW), width / 530f));
         shown = Anim.approach(shown, open ? 1 : 0, 15, Scene.frameDt);
         x = (int) Math.round(8 - (1 - shown) * (WIDTH + 12) * scale);
         y = Math.round(height * 0.15f);
@@ -238,17 +240,17 @@ public final class RecipePanel {
         if (filtered.isEmpty()) {
             g.textWithWordWrap(font, text("empty"), 15, GRID_Y + 35, WIDTH - 30, color(a * 0.7f, 210, 206, 198));
         }
-        g.text(font, "‹", 12, 171, color(a * (page > 0 ? 0.85f : 0.25f), 242, 234, 216), false);
+        g.text(font, "‹", 12, 171 + BELOW, color(a * (page > 0 ? 0.85f : 0.25f), 242, 234, 216), false);
         String counter = (page + 1) + " / " + pages();
-        g.text(font, counter, (WIDTH - font.width(counter)) / 2, 171, color(a * 0.65f, 242, 234, 216), false);
-        g.text(font, "›", WIDTH - 18, 171, color(a * (page < pages() - 1 ? 0.85f : 0.25f), 242, 234, 216), false);
-        g.fill(8, 185, WIDTH - 8, 186, color(a * 0.12f, 255, 255, 255));
+        g.text(font, counter, (WIDTH - font.width(counter)) / 2, 171 + BELOW, color(a * 0.65f, 242, 234, 216), false);
+        g.text(font, "›", WIDTH - 18, 171 + BELOW, color(a * (page < pages() - 1 ? 0.85f : 0.25f), 242, 234, 216), false);
+        g.fill(8, 185 + BELOW, WIDTH - 8, 186 + BELOW, color(a * 0.12f, 255, 255, 255));
         if (selected != null) {
-            g.text(font, font.plainSubstrByWidth(selected.result().getHoverName().getString(), WIDTH - 34), 9, 190,
+            g.text(font, font.plainSubstrByWidth(selected.result().getHoverName().getString(), WIDTH - 34), 9, 190 + BELOW,
                     color(a * 0.85f, 242, 234, 216), false);
-            g.text(font, "×", WIDTH - 17, 190, color(a * 0.85f, 242, 234, 216), false);
+            g.text(font, "×", WIDTH - 17, 190 + BELOW, color(a * 0.85f, 242, 234, 216), false);
         } else {
-            g.text(font, text("choose"), 9, 190, color(a * 0.55f, 242, 234, 216), false);
+            g.text(font, text("choose"), 9, 190 + BELOW, color(a * 0.55f, 242, 234, 216), false);
         }
         drawMaterials(g, font, a, mouse);
         drawAction(g, font, a, mouse);
@@ -349,10 +351,10 @@ public final class RecipePanel {
             if (action.active()) action.onAction();
         } else if (ly < 23 && lx >= WIDTH - 25) open = false;
         else if (ly >= 46 && ly < 59) { craftableOnly = !craftableOnly; page = 0; filter(); }
-        else if (ly >= 169 && ly < 184) {
+        else if (ly >= 169 + BELOW && ly < 184 + BELOW) {
             if (lx < 32) page = Math.max(0, page - 1);
             else if (lx > WIDTH - 32) page = Math.min(pages() - 1, page + 1);
-        } else if (ly >= 186 && ly < nameBottom() && lx >= WIDTH - 25) source.select(null);
+        } else if (ly >= 186 + BELOW && ly < nameBottom() && lx >= WIDTH - 25) source.select(null);
         else {
             int index = entryAt(mx, my);
             if (index >= 0) source.select(filtered.get(index));
@@ -394,7 +396,7 @@ public final class RecipePanel {
         if (ly < 23 && lx >= WIDTH - 25) return List.of(text("hide"));
         if (inAction(mx, my)) return action().tooltip();
         Entry selected = source.selected();
-        if (ly >= 186 && ly < nameBottom() && selected != null) return List.of(selected.result().getHoverName(), text("clear"));
+        if (ly >= 186 + BELOW && ly < nameBottom() && selected != null) return List.of(selected.result().getHoverName(), text("clear"));
         int material = materialAt(mx, my);
         if (material >= 0) {
             Material m = materials().get(material);
