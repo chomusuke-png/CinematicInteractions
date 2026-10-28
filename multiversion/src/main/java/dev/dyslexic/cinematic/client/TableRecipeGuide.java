@@ -101,6 +101,10 @@ final class TableRecipeGuide implements RecipePanel.Source {
     private final TableStation station;
     private List<ItemStack> snapshot = List.of();
     private int indexed = -1;
+    /** The book is open: its list shows which entries can be made. */
+    private boolean listed;
+    /** What is at hand changed since the entries were last marked craftable. */
+    private boolean craftableStale = true;
     static boolean empty(Ingredient ingredient) { return ingredient == null; }
 
     TableRecipeGuide(TableStation station) {
@@ -161,15 +165,40 @@ final class TableRecipeGuide implements RecipePanel.Source {
         for (int i = 0; i < 9; i++) next.add(table == null ? ItemStack.EMPTY : table.items[i].copy());
         boolean changed = reindexed || next.size() != snapshot.size();
         for (int i = 0; !changed && i < next.size(); i++) changed = !ItemStack.matches(next.get(i), snapshot.get(i));
-        if (!changed) return;
-        snapshot = next;
-        List<ItemStack> pool = units(next);
-        for (Entry entry : entries) {
-            int[] assignment = match(entry.ingredients, pool);
-            entry.craftable = Arrays.stream(assignment).allMatch(i -> i >= 0);
+        if (changed) {
+            snapshot = next;
+            craftableStale = true;
+            refresh();
+            revision++;
         }
-        refresh();
-        revision++;
+        // which entries can be made only shows in the open book's list; on a large pack it is the costly part
+        if (craftableStale && listed) {
+            craftableStale = false;
+            markCraftable();
+            revision++;
+        }
+    }
+
+    /**
+     * Whether each entry can be made from what is at hand. Most recipes of a large pack lack an ingredient altogether:
+     * that is found against the few distinct stacks at hand, before the full matching against every unit.
+     */
+    private void markCraftable() {
+        List<ItemStack> kinds = snapshot.stream().filter(stack -> !stack.isEmpty()).toList();
+        List<ItemStack> pool = units(snapshot);
+        for (Entry entry : entries) {
+            entry.craftable = entry.ingredients.size() <= pool.size() && present(entry.ingredients, kinds)
+                    && Arrays.stream(match(entry.ingredients, pool)).allMatch(i -> i >= 0);
+        }
+    }
+
+    private static boolean present(List<Ingredient> ingredients, List<ItemStack> kinds) {
+        for (Ingredient ingredient : ingredients) {
+            boolean found = false;
+            for (int i = 0; !found && i < kinds.size(); i++) found = ingredient.test(kinds.get(i));
+            if (!found) return false;
+        }
+        return true;
     }
 
     @Override public List<Entry> entries() { return entries; }
@@ -178,6 +207,9 @@ final class TableRecipeGuide implements RecipePanel.Source {
 
     @Override
     public void tick(boolean open) {
+        listed = open;
+        // On large packs the index and inventory matching are expensive; keep them idle while the book is closed.
+        if (!open && selected == null) return;
         tick();
     }
 

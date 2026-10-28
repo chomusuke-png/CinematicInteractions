@@ -554,9 +554,23 @@ public final class CampfireStation extends ClientStation implements SpatialTarge
         }
     }
 
+    // asked every frame while food is carried over the fire; on a large pack the lookup walks many recipes
+    private static ItemStack cookableStack = ItemStack.EMPTY;
+    private static Object cookableRecipes;
+    private static boolean cookableAnswer;
+
     /** Whether the food cooks on a campfire. Not getCookableRecipe: it answers nothing once all four spots are taken. */
     private static boolean cookable(ItemStack carried) {
         Level level = Minecraft.getInstance().level;
+        if (level.getRecipeManager() != cookableRecipes || !ItemStack.isSameItemSameComponents(carried, cookableStack)) {
+            cookableRecipes = level.getRecipeManager();
+            cookableStack = carried.copyWithCount(1);
+            cookableAnswer = lookUpCookable(level, carried);
+        }
+        return cookableAnswer;
+    }
+
+    private static boolean lookUpCookable(Level level, ItemStack carried) {
         //? if >=1.21 {
         return level.getRecipeManager().getRecipeFor(net.minecraft.world.item.crafting.RecipeType.CAMPFIRE_COOKING,
                 new net.minecraft.world.item.crafting.SingleRecipeInput(carried), level).isPresent();

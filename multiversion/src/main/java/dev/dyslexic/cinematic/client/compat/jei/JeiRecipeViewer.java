@@ -100,20 +100,32 @@ public final class JeiRecipeViewer implements RecipeViewer {
     public List<ItemStack> stationOutputs(ItemStack station) {
         return outputs.computeIfAbsent(station.getItem(), item -> {
             List<ItemStack> made = new ArrayList<>();
-            for (IRecipeCategory<?> category : stationCategories(station)) collectOutputs(category, made);
+            Map<Item, List<ItemStack>> seen = new HashMap<>();
+            for (IRecipeCategory<?> category : stationCategories(station)) collectOutputs(category, made, seen);
             made.sort(Comparator.comparing((ItemStack s) -> s.getHoverName().getString()));
             return List.copyOf(made);
         });
     }
 
-    private <T> void collectOutputs(IRecipeCategory<T> category, List<ItemStack> made) {
+    private <T> void collectOutputs(IRecipeCategory<T> category, List<ItemStack> made, Map<Item, List<ItemStack>> seen) {
         recipes().createRecipeLookup(category.getRecipeType()).get().forEach(recipe -> {
             if (made.size() >= MAX_OUTPUTS) return;
             for (var output : recipes().getRecipeIngredients(category, recipe).getIngredients(RecipeIngredientRole.OUTPUT)) {
-                output.getItemStack().filter(s -> !s.isEmpty() && made.stream().noneMatch(m -> ItemStack.isSameItemSameComponents(m, s)))
+                output.getItemStack().filter(s -> !s.isEmpty() && firstOf(seen, s))
                         .ifPresent(s -> made.add(s.copyWithCount(1)));
             }
         });
+    }
+
+    /**
+     * Whether no stack of the same item and components is in yet, and records it if so. Compared only with the same
+     * item's, so a pack's thousands of outputs are not each compared with all the others.
+     */
+    private static boolean firstOf(Map<Item, List<ItemStack>> seen, ItemStack stack) {
+        List<ItemStack> same = seen.computeIfAbsent(stack.getItem(), item -> new ArrayList<>());
+        for (ItemStack other : same) if (ItemStack.isSameItemSameComponents(other, stack)) return false;
+        same.add(stack);
+        return true;
     }
 
     @Override

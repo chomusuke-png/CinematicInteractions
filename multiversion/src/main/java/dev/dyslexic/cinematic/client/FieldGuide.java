@@ -103,7 +103,9 @@ final class FieldGuide {
             profession = professionOf(station);
             professionPage = null;
             select(null);
-            refresh();
+            // what the station makes is read from the viewer when the guide is opened, not at every scene's start
+            if (open) refresh();
+            else items = List.of();
         }
     }
 

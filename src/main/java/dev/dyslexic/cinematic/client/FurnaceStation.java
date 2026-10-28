@@ -431,9 +431,25 @@ public final class FurnaceStation extends ClientStation {
         };
     }
 
+    // asked every frame while an item hovers the input; on a large pack the lookup walks thousands of recipes
+    private ItemStack cookableStack = ItemStack.EMPTY;
+    private Object cookableRecipes;
+    private boolean cookableAnswer;
+
     @SuppressWarnings("unchecked")
     private boolean cookable(ItemStack stack) {
         Minecraft mc = Minecraft.getInstance();
+        Object recipes = mc.level == null ? null : mc.level.getRecipeManager();
+        if (recipes != cookableRecipes || !ItemStack.isSameItemSameComponents(stack, cookableStack)) {
+            cookableRecipes = recipes;
+            cookableStack = stack.copyWithCount(1);
+            cookableAnswer = lookUpCookable(mc, stack);
+        }
+        return cookableAnswer;
+    }
+
+    @SuppressWarnings("unchecked")
+    private boolean lookUpCookable(Minecraft mc, ItemStack stack) {
         RecipeType<AbstractCookingRecipe> type = (RecipeType<AbstractCookingRecipe>) layout.recipeType;
         //? if >=1.21 {
         return mc.level != null && mc.level.getRecipeManager().getRecipeFor(type, new SingleRecipeInput(stack), mc.level).isPresent();
