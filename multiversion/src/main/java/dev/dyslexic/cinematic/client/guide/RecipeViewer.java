@@ -38,6 +38,9 @@ public interface RecipeViewer {
 
     boolean isShowUsesKey(int key, int scanCode);
 
+    /** Whether {@code screen} is one of the viewer's own pages (a recipe or uses page), however it was opened. */
+    boolean isPage(net.minecraft.client.gui.screens.Screen screen);
+
     /** Those two keys' names, as the player has them bound. */
     Component keyNames();
 

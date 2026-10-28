@@ -234,6 +234,11 @@ public final class JeiRecipeViewer implements RecipeViewer {
         return jei.getKeyMappings().getShowUses().isActiveAndMatches(InputConstants.getKey(key, scanCode));
     }
 
+    @Override
+    public boolean isPage(net.minecraft.client.gui.screens.Screen screen) {
+        return screen instanceof mezz.jei.api.runtime.IRecipesGui;
+    }
+
     /** A recipe drawn by JEI's own layout; the layout is made the first time the guide draws it. */
     private final class JeiStationRecipe<T> implements StationRecipe {
         private final IRecipeCategory<T> category;

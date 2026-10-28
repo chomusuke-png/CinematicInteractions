@@ -73,6 +73,11 @@ public final class SceneScreen extends AbstractContainerScreen<AbstractContainer
 
     @Override
     protected void containerTick() {
+        if (!Scene.active()) {
+            // the scene ended while a recipe viewer's page covered it; the viewer handed back a screen with nothing under it
+            minecraft.gui.setScreen(null);
+            return;
+        }
         // the menu a container screen works on is fixed; a station that opens its menu later gets a screen over that one
         if (minecraft.player != null && minecraft.player.containerMenu != menu) {
             minecraft.gui.setScreen(new SceneScreen(this));

@@ -136,6 +136,18 @@ public final class Scene {
     /** A JEI page may replace the scene screen while the player remains at this station. */
     static boolean consulting;
 
+    /**
+     * Whether {@code next} opens over the scene to consult the recipe viewer: from the field guide, or one of the
+     * viewer's pages opened its own way (its recipe and uses keys over a drawer slot), which holds the scene the same.
+     */
+    static boolean consults(net.minecraft.client.gui.screens.Screen next) {
+        if (!consulting && phase == Phase.ACTIVE) {
+            dev.dyslexic.cinematic.client.guide.RecipeViewer viewer = dev.dyslexic.cinematic.client.guide.RecipeViewers.get();
+            consulting = viewer != null && viewer.isPage(next);
+        }
+        return consulting;
+    }
+
     static void consult(Runnable open) {
         if (phase != Phase.ACTIVE) return;
         consulting = true;

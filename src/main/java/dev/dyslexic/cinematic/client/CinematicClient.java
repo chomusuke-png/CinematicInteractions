@@ -704,7 +704,7 @@ public final class CinematicClient {
             }
             if (next instanceof InventoryScreen) {
                 if (Scene.phase != Scene.Phase.OUTRO) event.setCanceled(true);
-            } else if (Scene.phase == Scene.Phase.ACTIVE && next != null && !next.isPauseScreen() && !Scene.consulting) {
+            } else if (Scene.phase == Scene.Phase.ACTIVE && next != null && !next.isPauseScreen() && !Scene.consults(next)) {
                 // something else took over the screen (a server menu, another mod): drop the scene at once
                 Scene.drop();
             }
@@ -731,7 +731,7 @@ public final class CinematicClient {
             //? if neoforge {
             if (next instanceof InventoryScreen) {
                 event.setCanceled(true);
-            } else if (Scene.phase == Scene.Phase.ACTIVE && next != null && !next.isPauseScreen() && !Scene.consulting) {
+            } else if (Scene.phase == Scene.Phase.ACTIVE && next != null && !next.isPauseScreen() && !Scene.consults(next)) {
                 // something else took over the screen (a server menu, another mod): drop the scene at once
                 Scene.drop();
             }
@@ -778,7 +778,7 @@ public final class CinematicClient {
                 ShelfBooks.unloadChunk(event.getChunk().getPos());
             }
         //?} else if fabric {
-        /*if (Scene.phase == Scene.Phase.ACTIVE && !next.isPauseScreen() && !Scene.consulting) {
+        /*if (Scene.phase == Scene.Phase.ACTIVE && !next.isPauseScreen() && !Scene.consults(next)) {
             // something else took over the screen (a server menu, another mod): drop the scene at once
             Scene.drop();
         *///?} else if forge {
