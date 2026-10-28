@@ -444,6 +444,12 @@ public final class GrindstoneStation extends MenuStation<GrindstoneMenu> impleme
         return new Vec3[]{grip, left};
     }
 
+    /** Soft while reaching for the handle, then held tight to it so the hands keep up with the strokes. */
+    @Override
+    public double handsStiffness() {
+        return moving() ? 20 + 100 * Anim.window(moveTime(), 0.1, 0.28) : 20;
+    }
+
     @Override
     public double cameraKick() {
         double t = moveTime();
